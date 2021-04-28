@@ -23,15 +23,13 @@ jobs:
       - run: |
           git fetch --prune --unshallow --tags
       - name: Get dependencies and build
-        #          go get github.com/rakyll/statik
+#        sudo apt-get -y install gcc-mingw-w64-x86-64
+#        sudo apt-get -y install gcc-arm-linux-gnueabihf libc6-dev-armhf-cross
+#        sudo apt-get -y install gcc-aarch64-linux-gnu libc6-dev-arm64-cross
         run: |
           export PATH=$PATH:~/go/bin/
-          statik -src=models -f
           sudo apt-get update
-          sudo apt-get -y install gcc-mingw-w64-x86-64
-          sudo apt-get -y install gcc-arm-linux-gnueabihf libc6-dev-armhf-cross
-          sudo apt-get -y install gcc-aarch64-linux-gnu libc6-dev-arm64-cross
-          sudo apt-get -y install make
+          sudo apt-get -y install make automake
           make build
 
 #      - name: Upload binary files (windows_amd64)
