@@ -3,9 +3,9 @@ BUILD = $(shell date +%F)
 COMMIT_SHA=$(shell git rev-parse --short HEAD)
 
 debugInfo:
-	@echo "RELEASE:"     $(RELEASE)
-	@echo "VERSION:"     $(VERSION)
-	@echo "$COMMIT_SHA:" $(COMMIT_SHA)
+	@echo "VERSION:"    $(VERSION)
+	@echo "COMMIT_SHA:" $(COMMIT_SHA)
+	@echo "BUILD:"      $(BUILD)
 
 
 build:
