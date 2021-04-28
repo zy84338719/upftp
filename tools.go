@@ -75,9 +75,12 @@ func getAllFile(pathname string) map[string]string {
 			dir := strings.Replace(pathname, root, "", 1)
 			if len(dir) > 0 {
 				dir = path.Join(dir)
+				m[fi.Name()] = ip + path.Join(port, dir, fi.Name())
+				fmt.Println(ip + path.Join(port, dir, fi.Name()))
+			}else {
+				m[fi.Name()] = ip +path.Join( port, fi.Name())
+				fmt.Println(ip + path.Join(port, fi.Name()))
 			}
-			m[fi.Name()] = ip + port + dir + "/" + fi.Name()
-			fmt.Println(ip + port + dir + "/" + fi.Name())
 		}
 	}
 	return m

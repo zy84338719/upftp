@@ -11,10 +11,16 @@ import (
 )
 
 var (
+	Version ="undefined"
+	LastCommit = "undefined"
+)
+var (
 	root, ip, port string
 )
 
 func init() {
+	fmt.Println("version:", Version)
+	fmt.Println("last_commit:", LastCommit)
 	p := flag.String("p", "10000", "-p 8888 prot default 10000")
 	dir := flag.String("d", "./", "-d /opt dir default ./")
 	flag.Parse()
@@ -34,6 +40,7 @@ func init() {
 		fmt.Println("Enter select ip number err")
 	}
 }
+
 
 func main() {
 	files := getAllFile(root)
