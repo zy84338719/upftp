@@ -54,7 +54,6 @@ chmod +x ./upftp
 ./upftp
 ```
 
-以上为最简单的部署示例，您可以参考 [文档 - 起步](https://docs.cloudreve.org/) 进行更为完善的部署。
 
 ## :gear: 构建
 
