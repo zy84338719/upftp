@@ -93,7 +93,7 @@ make build
 
 ## :scroll: 许可证
 
-[MIT](https://github.com/zy84338719/upftp/master/LICENSE.txt)
+[MIT](https://github.com/zy84338719/upftp/blob/main/LICENSE.txt)
 
 ---
 > GitHub [@zy84338719](https://github.com/zy84338719) &nbsp;&middot;&nbsp;
