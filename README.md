@@ -93,7 +93,7 @@ make build
 
 ## :scroll: 许可证
 
-GPL V3
+[MIT](https://github.com/zy84338719/upftp/master/LICENSE.txt)
 
 ---
 > GitHub [@zy84338719](https://github.com/zy84338719) &nbsp;&middot;&nbsp;
