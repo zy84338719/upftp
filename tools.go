@@ -57,7 +57,6 @@ func GinServer(ctx context.Context) {
 	}
 }
 
-
 func getAllFile(pathname string) map[string]string {
 	rd, err := ioutil.ReadDir(pathname)
 	if err != nil {
@@ -77,8 +76,8 @@ func getAllFile(pathname string) map[string]string {
 				dir = path.Join(dir)
 				m[fi.Name()] = ip + path.Join(port, dir, fi.Name())
 				fmt.Println(ip + path.Join(port, dir, fi.Name()))
-			}else {
-				m[fi.Name()] = ip +path.Join( port, fi.Name())
+			} else {
+				m[fi.Name()] = ip + path.Join(port, fi.Name())
 				fmt.Println(ip + path.Join(port, fi.Name()))
 			}
 		}
@@ -94,7 +93,7 @@ func scanCmd(ctx context.Context, files map[string]string, s chan os.Signal) {
 	var data string
 	for {
 		fmt.Println("place enter file name, exit and q is kill me")
-		_,_=fmt.Scanln(&data)
+		_, _ = fmt.Scanln(&data)
 		if data == "exit" || data == "q" {
 			break
 		}
