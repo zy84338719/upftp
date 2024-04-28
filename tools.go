@@ -6,10 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net"
-	"os"
 	"path"
 	"strings"
-	"syscall"
 )
 
 func getIps() []string {
@@ -22,12 +20,12 @@ func getIps() []string {
 	ips := []string{}
 	i := 0
 	for _, value := range addrs {
-		if ipnet, ok := value.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				fmt.Println(i, " ", ipnet.IP.String())
-				ips = append(ips, ipnet.IP.String())
-				i++
-			}
+		if ipnet, ok := value.(*net.IPNet); !ok || ipnet.IP.IsLoopback() || ipnet.IP.To4() == nil {
+			continue
+		} else {
+			fmt.Println(i, " ", ipnet.IP.String())
+			ips = append(ips, ipnet.IP.String())
+			i++
 		}
 	}
 	return ips
@@ -57,19 +55,15 @@ func GinServer(ctx context.Context) {
 	}
 }
 
-func getAllFile(pathname string) map[string]string {
+func getAllFile(pathname string, m map[string]string) {
 	rd, err := ioutil.ReadDir(pathname)
 	if err != nil {
 		fmt.Println(fmt.Errorf("file menu ready error，err=%s", err))
-		return map[string]string{}
+		return
 	}
-	m := map[string]string{}
-	for _, fi := range rd {
+	for i, fi := range rd {
 		if fi.IsDir() {
-			//fmt.Printf("[%s]\n", pathname+"\\"+fi.Name())
-			for k, v := range getAllFile(path.Join(pathname, fi.Name())) {
-				m[k] = v
-			}
+			getAllFile(path.Join(pathname, fi.Name()), m)
 		} else {
 			dir := strings.Replace(pathname, root, "", 1)
 			if len(dir) > 0 {
@@ -81,13 +75,15 @@ func getAllFile(pathname string) map[string]string {
 				fmt.Println(ip + path.Join(port, fi.Name()))
 			}
 		}
+		if i > 20 {
+			fmt.Println("file list too long, only show 20")
+			break
+		}
 	}
-	return m
 }
 
-func scanCmd(ctx context.Context, files map[string]string, s chan os.Signal) {
+func scanCmd(ctx context.Context, files map[string]string) {
 	if len(files) == 0 {
-		s <- syscall.SIGQUIT
 		return
 	}
 	var data string
@@ -105,5 +101,4 @@ func scanCmd(ctx context.Context, files map[string]string, s chan os.Signal) {
 		fmt.Println()
 		fmt.Println()
 	}
-	s <- syscall.SIGQUIT
 }
