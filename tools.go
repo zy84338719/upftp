@@ -6,8 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net"
+	"os"
 	"path"
 	"strings"
+	"syscall"
 )
 
 func getIps() []string {
@@ -82,8 +84,9 @@ func getAllFile(pathname string, m map[string]string) {
 	}
 }
 
-func scanCmd(ctx context.Context, files map[string]string) {
+func scanCmd(ctx context.Context, files map[string]string, s chan os.Signal) {
 	if len(files) == 0 {
+		s <- syscall.SIGQUIT
 		return
 	}
 	var data string

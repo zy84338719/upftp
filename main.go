@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	Version ="undefined"
+	Version    = "undefined"
 	LastCommit = "undefined"
 )
 var (
@@ -41,9 +41,9 @@ func init() {
 	}
 }
 
-
 func main() {
-	files := getAllFile(root)
+	files := map[string]string{}
+	getAllFile(root, files)
 	ctx := context.Background()
 	ctx, cancelFunc := context.WithCancel(ctx)
 	go GinServer(ctx)
