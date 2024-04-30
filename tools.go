@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -37,23 +38,34 @@ func GinServer(ctx context.Context) {
 	gin.SetMode(gin.ReleaseMode)
 	gin.ForceConsoleColor()
 	router := gin.New()
-	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-		// 你的自定义格式
-		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s \n",
-			param.ClientIP,
-			param.TimeStamp.Format("3:04:05PM"),
-			param.Method,
-			param.Path,
-			param.Request.Proto,
-			param.StatusCode,
-			param.Latency,
-			param.ErrorMessage,
-		)
-	}))
-	router.Use(gin.Recovery())
-	router.StaticFS("/", gin.Dir(root, true))
+	router.LoadHTMLGlob("templates/*")             // 加载模板文件
+	router.StaticFS("/files", gin.Dir(root, true)) // 静态文件服务
+
+	router.GET("/", func(c *gin.Context) {
+		files, _ := ioutil.ReadDir(root)
+		fileList := []map[string]interface{}{}
+		for _, file := range files {
+			fileMap := map[string]interface{}{
+				"Name":    file.Name(),
+				"IsImage": strings.HasSuffix(file.Name(), ".png") || strings.HasSuffix(file.Name(), ".jpg"),
+			}
+			fileList = append(fileList, fileMap)
+		}
+		c.HTML(http.StatusOK, "index.html", fileList)
+	})
+
+	router.GET("/download/:filename", func(c *gin.Context) {
+		filename := c.Param("filename")
+		c.FileAttachment(path.Join(root, filename), filename)
+	})
+
+	router.GET("/preview/:filename", func(c *gin.Context) {
+		filename := c.Param("filename")
+		c.File(path.Join(root, filename))
+	})
+
 	if err := router.Run(port); err != nil {
-		panic(fmt.Errorf("Ftp Server start error = %s", err))
+		panic(fmt.Errorf("Server start error = %s", err))
 	}
 }
 
@@ -70,11 +82,11 @@ func getAllFile(pathname string, m map[string]string) {
 			dir := strings.Replace(pathname, root, "", 1)
 			if len(dir) > 0 {
 				dir = path.Join(dir)
-				m[fi.Name()] = ip + path.Join(port, dir, fi.Name())
-				fmt.Println(ip + path.Join(port, dir, fi.Name()))
+				m[fi.Name()] = ip + path.Join(port, "download", dir, fi.Name())
+				fmt.Println(ip + path.Join(port, "download", dir, fi.Name()))
 			} else {
-				m[fi.Name()] = ip + path.Join(port, fi.Name())
-				fmt.Println(ip + path.Join(port, fi.Name()))
+				m[fi.Name()] = ip + path.Join(port, "download", fi.Name())
+				fmt.Println(ip + path.Join(port, "download", fi.Name()))
 			}
 		}
 		if i > 20 {
@@ -91,6 +103,7 @@ func scanCmd(ctx context.Context, files map[string]string, s chan os.Signal) {
 	}
 	var data string
 	for {
+		fmt.Println("place index " + ip + port + " in browser to view files")
 		fmt.Println("place enter file name, exit and q is kill me")
 		_, _ = fmt.Scanln(&data)
 		if data == "exit" || data == "q" {
