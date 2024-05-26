@@ -38,7 +38,7 @@ func GinServer(ctx context.Context) {
 	gin.SetMode(gin.ReleaseMode)
 	gin.ForceConsoleColor()
 	router := gin.New()
-	router.LoadHTMLGlob("templates/*")             // 加载模板文件
+	router.LoadHTMLGlob("./templates/*")           // 加载模板文件
 	router.StaticFS("/files", gin.Dir(root, true)) // 静态文件服务
 
 	router.GET("/", func(c *gin.Context) {
