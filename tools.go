@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"html/template"
+	"io/fs"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -34,11 +37,15 @@ func getIps() []string {
 	return ips
 }
 
+//go:embed templates/*
+var templates embed.FS
+
 func GinServer(ctx context.Context) {
 	gin.SetMode(gin.ReleaseMode)
 	gin.ForceConsoleColor()
 	router := gin.New()
-	router.LoadHTMLGlob("./templates/*")           // 加载模板文件
+	htmlFS, _ := fs.Sub(templates, "templates")
+	router.SetHTMLTemplate(template.Must(template.ParseFS(htmlFS, "*.html")))
 	router.StaticFS("/files", gin.Dir(root, true)) // 静态文件服务
 
 	router.GET("/", func(c *gin.Context) {
