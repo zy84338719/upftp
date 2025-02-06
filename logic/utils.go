@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -67,22 +68,84 @@ func ScanCmd(ctx context.Context, files map[string]string, s chan os.Signal) {
 		s <- syscall.SIGQUIT
 		return
 	}
-	var data string
+
+	fmt.Printf("\n=== upftp Server ===\n")
+	fmt.Printf("Web Interface: %s%s\n", IP, Port)
+	fmt.Printf("Root Directory: %s\n\n", Root)
+
 	for {
-		fmt.Println("place index " + IP + Port + " in browser to view files")
-		fmt.Println("place enter file name, exit and q is kill me")
-		_, _ = fmt.Scanln(&data)
-		if data == "exit" || data == "q" {
-			break
+		fmt.Printf("\nOptions:\n")
+		fmt.Printf("1. Search files\n")
+		fmt.Printf("2. Show download commands\n")
+		fmt.Printf("3. Exit\n")
+		fmt.Printf("Choose an option (1-3): ")
+
+		var option string
+		_, _ = fmt.Scanln(&option)
+
+		switch option {
+		case "1":
+			searchFiles(files)
+		case "2":
+			showDownloadCommands()
+		case "3", "exit", "q":
+			fmt.Println("\nShutting down server...")
+			s <- syscall.SIGQUIT
+			return
+		default:
+			fmt.Println("\nInvalid option, please try again")
 		}
-		for k, v := range files {
-			if strings.Contains(k, data) {
-				fmt.Println(v)
-			}
-		}
-		fmt.Println()
-		fmt.Println()
 	}
+}
+
+func searchFiles(files map[string]string) {
+	fmt.Printf("\nEnter search term (or press Enter to list all): ")
+	var term string
+	reader := bufio.NewReader(os.Stdin)
+	term, _ = reader.ReadString('\n')
+	term = strings.TrimSpace(term)
+
+	found := false
+	fmt.Println("\nMatching files:")
+	fmt.Println("---------------")
+	for k, v := range files {
+		if term == "" || strings.Contains(strings.ToLower(k), strings.ToLower(term)) {
+			found = true
+			fmt.Printf("\nFile: %s\n", k)
+			fmt.Printf("Download URL: %s\n", v)
+			fmt.Printf("curl command: curl -O %s\n", v)
+			fmt.Printf("wget command: wget %s\n", v)
+			fmt.Println("---------------")
+		}
+	}
+
+	if !found {
+		fmt.Println("No matching files found")
+	}
+}
+
+func showDownloadCommands() {
+	fmt.Printf("\nDownload Commands Examples:\n")
+	fmt.Printf("----------------------------\n")
+	fmt.Printf("Using curl:\n")
+	fmt.Printf("  Single file: curl -O <url>\n")
+	fmt.Printf("  Save as different name: curl -o newname.txt <url>\n")
+	fmt.Printf("  Download with progress: curl -# -O <url>\n\n")
+
+	fmt.Printf("Using wget:\n")
+	fmt.Printf("  Single file: wget <url>\n")
+	fmt.Printf("  Save as different name: wget -O newname.txt <url>\n")
+	fmt.Printf("  Download with progress: wget -q --show-progress <url>\n\n")
+
+	fmt.Printf("Note:\n")
+	fmt.Printf("- Replace <url> with the actual download URL\n")
+	fmt.Printf("- You can also use web browser to download files: %s%s\n", IP, Port)
+	fmt.Printf("----------------------------\n")
+}
+
+// 添加一个辅助函数来打印分隔线
+func printDivider() {
+	fmt.Println("\n" + strings.Repeat("-", 50) + "\n")
 }
 
 func getFileType(filename string) string {
