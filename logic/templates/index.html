@@ -65,6 +65,14 @@
             cursor: pointer;
             font-size: 24px;
         }
+        .folder-icon::before {
+            content: "📁";
+            margin-right: 5px;
+        }
+        .file-icon::before {
+            content: "📄";
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -73,15 +81,23 @@
     {{range .}}
     <li class="file-item">
         <div class="file-info">
-            <strong>{{.Name}}</strong>
+            {{if .IsDir}}
+            <a href="{{.Path}}" class="folder-icon">{{.Name}}</a>
+            {{else}}
+            <span class="file-icon">{{.Name}}</span>
+            {{end}}
+            {{if not .IsDir}}
             <br>
             <small>Size: {{.Size}} | Modified: {{.ModTime}}</small>
+            {{end}}
         </div>
         <div class="file-actions">
-            {{if .CanPreview}}
-            <button onclick="showPreview('/preview/{{.Name}}', '{{.FileType}}')">Preview</button>
+            {{if not .IsDir}}
+                {{if .CanPreview}}
+                <button onclick="showPreview('/preview/{{.Path}}', '{{.FileType}}')">Preview</button>
+                {{end}}
             {{end}}
-            <a href="/download/{{.Name}}" class="button">Download</a>
+            <a href="/download/{{.Path}}" class="button">Download{{if .IsDir}} as ZIP{{end}}</a>
         </div>
     </li>
     {{end}}
