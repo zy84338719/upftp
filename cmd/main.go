@@ -24,6 +24,19 @@ var (
 func init() {
 	fmt.Println("version:", Version)
 	fmt.Println("last_commit:", LastCommit)
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "upftp - A lightweight file sharing server\n\n")
+		fmt.Fprintf(os.Stderr, "Project: https://github.com/zy84338719/upftp\n\n")
+		fmt.Fprintf(os.Stderr, "Usage:\n")
+		fmt.Fprintf(os.Stderr, "  upftp [options]\n\n")
+		fmt.Fprintf(os.Stderr, "Options:\n")
+		fmt.Fprintf(os.Stderr, "  -p <port>    Specify port number (default: 10000)\n")
+		fmt.Fprintf(os.Stderr, "  -d <dir>     Specify share directory (default: current directory)\n")
+		fmt.Fprintf(os.Stderr, "  -auto        Automatically select first available network interface\n")
+		fmt.Fprintf(os.Stderr, "  -h           Show this help message\n")
+	}
+
 	p := flag.String("p", "10000", "-p 8888 port default 10000")
 	dir := flag.String("d", "./", "-d /opt dir default ./")
 	autoIP := flag.Bool("auto", false, "-auto to automatically select the first non-loopback IP")
