@@ -9,4 +9,4 @@ debugInfo:
 
 
 build:
-	go build -a -ldflags " -X \"main.Version=$(VERSION)\" -X \"main.LastCommit=$(COMMIT_SHA)\" " -o upftp
+	go build -a -ldflags " -X \"main.Version=$(VERSION)\" -X \"main.LastCommit=$(COMMIT_SHA)\" " -o upftp ./src/...
