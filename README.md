@@ -87,18 +87,7 @@ chmod +x ./upftp
 go install github.com/zy84338719/upftp@latest
 ```
 
-### 使用 Homebrew 安装
 
-```bash
-brew install zy84338719/upftp/upftp
-```
-
-或者：
-
-```bash
-brew tap zy84338719/upftp
-brew install upftp
-```
 
 ## :gear: 从源码构建
 
