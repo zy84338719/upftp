@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Post-install script for upftp
+
+set -e
+
+# Create systemd service file
+cat > /etc/systemd/system/upftp.service << 'EOF'
+[Unit]
+Description=UPFTP File Server
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=upftp
+Group=upftp
+ExecStart=/usr/bin/upftp -auto -d /var/lib/upftp
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Create upftp user and group
+if ! getent group upftp >/dev/null; then
+    groupadd --system upftp
+fi
+
+if ! getent passwd upftp >/dev/null; then
+    useradd --system --gid upftp --shell /bin/false \
+        --home-dir /var/lib/upftp --create-home upftp
+fi
+
+# Create data directory
+mkdir -p /var/lib/upftp
+chown upftp:upftp /var/lib/upftp
+chmod 755 /var/lib/upftp
+
+# Reload systemd
+systemctl daemon-reload
+
+echo "UPFTP has been installed successfully!"
+echo "To start the service: sudo systemctl start upftp"
+echo "To enable on boot: sudo systemctl enable upftp"
+echo "Service will run on http://your-ip:10000"
