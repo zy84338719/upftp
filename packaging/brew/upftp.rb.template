@@ -1,0 +1,34 @@
+class Upftp < Formula
+  desc "Modern cross-platform file sharing server"
+  homepage "https://github.com/zy84338719/upftp"
+  url "https://github.com/zy84338719/upftp/archive/v{{.Version}}.tar.gz"
+  sha256 "{{.SHA256}}"
+  license "MIT"
+  head "https://github.com/zy84338719/upftp.git", branch: "main"
+
+  depends_on "go" => :build
+
+  def install
+    system "make", "build"
+    bin.install "upftp"
+    
+    # Install man page
+    man1.install "docs/upftp.1" if File.exist?("docs/upftp.1")
+    
+    # Install example config
+    etc.install "examples/upftp.conf" => "upftp.conf.example" if File.exist?("examples/upftp.conf")
+  end
+
+  service do
+    run [opt_bin/"upftp", "-auto", "-d", var/"upftp"]
+    keep_alive true
+    log_path var/"log/upftp.log"
+    error_log_path var/"log/upftp.error.log"
+    working_dir var/"upftp"
+  end
+
+  test do
+    # Test that the binary exists and can show version
+    assert_match "upftp", shell_output("#{bin}/upftp -h")
+  end
+end

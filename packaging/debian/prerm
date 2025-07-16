@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Pre-remove script for upftp
+
+set -e
+
+# Stop and disable the service if it's running
+if systemctl is-active --quiet upftp; then
+    systemctl stop upftp
+fi
+
+if systemctl is-enabled --quiet upftp; then
+    systemctl disable upftp
+fi

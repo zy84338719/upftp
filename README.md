@@ -72,9 +72,58 @@
 
 ## 🚀 快速开始
 
-### 下载和安装
+### 一键安装脚本
 
-从 [Releases页面](https://github.com/zy84338719/upftp/releases) 下载适合您系统的版本，或使用以下命令：
+最简单的安装方式，自动检测系统并选择最佳安装方法：
+
+```bash
+curl -fsSL https://install.upftp.dev | bash
+```
+
+### 包管理器安装
+
+#### Ubuntu/Debian (APT)
+
+```bash
+# 添加UPFTP仓库
+curl -fsSL https://apt.upftp.dev/key.gpg | sudo apt-key add -
+echo "deb https://apt.upftp.dev stable main" | sudo tee /etc/apt/sources.list.d/upftp.list
+
+# 安装
+sudo apt update
+sudo apt install upftp
+
+# 启动服务
+sudo systemctl start upftp
+sudo systemctl enable upftp  # 开机自启
+```
+
+#### macOS (Homebrew)
+
+```bash
+# 添加tap并安装
+brew tap zy84338719/tap
+brew install upftp
+
+# 启动服务
+brew services start upftp
+```
+
+#### CentOS/RHEL/Fedora (RPM)
+
+```bash
+# 下载RPM包
+wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_linux_amd64.rpm
+
+# 安装
+sudo rpm -ivh upftp_linux_amd64.rpm
+# 或者使用yum/dnf
+sudo yum localinstall upftp_linux_amd64.rpm
+```
+
+### 手动下载和安装
+
+从 [Releases页面](https://github.com/zy84338719/upftp/releases) 下载适合您系统的版本：
 
 ```bash
 # Linux amd64
@@ -203,9 +252,58 @@ make help
 
 ## 🚀 Quick Start
 
-### Download and Install
+### One-line Install Script
 
-Download the appropriate version for your system from the [Releases page](https://github.com/zy84338719/upftp/releases), or use these commands:
+The easiest way to install, automatically detects your system and chooses the best installation method:
+
+```bash
+curl -fsSL https://install.upftp.dev | bash
+```
+
+### Package Manager Installation
+
+#### Ubuntu/Debian (APT)
+
+```bash
+# Add UPFTP repository
+curl -fsSL https://apt.upftp.dev/key.gpg | sudo apt-key add -
+echo "deb https://apt.upftp.dev stable main" | sudo tee /etc/apt/sources.list.d/upftp.list
+
+# Install
+sudo apt update
+sudo apt install upftp
+
+# Start service
+sudo systemctl start upftp
+sudo systemctl enable upftp  # Enable on boot
+```
+
+#### macOS (Homebrew)
+
+```bash
+# Add tap and install
+brew tap zy84338719/tap
+brew install upftp
+
+# Start service
+brew services start upftp
+```
+
+#### CentOS/RHEL/Fedora (RPM)
+
+```bash
+# Download RPM package
+wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_linux_amd64.rpm
+
+# Install
+sudo rpm -ivh upftp_linux_amd64.rpm
+# Or use yum/dnf
+sudo yum localinstall upftp_linux_amd64.rpm
+```
+
+### Manual Download and Install
+
+Download the appropriate version for your system from the [Releases page](https://github.com/zy84338719/upftp/releases):
 
 ```bash
 # Linux amd64

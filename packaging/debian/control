@@ -1,0 +1,19 @@
+Package: upftp
+Version: {{.Version}}
+Section: net
+Priority: optional
+Architecture: {{.Arch}}
+Maintainer: Zhang Yi <zy84338719@gmail.com>
+Description: Modern cross-platform file sharing server
+ UPFTP is a lightweight, modern file sharing server that provides both HTTP
+ and FTP protocols for easy file sharing across different platforms.
+ .
+ Features:
+  - Modern responsive web interface with multi-language support
+  - File preview for images, videos, audio, text, and code
+  - Real-time file search functionality
+  - Cross-platform support (Linux, macOS, Windows)
+  - Optional FTP server with authentication
+  - Interactive command-line interface
+Homepage: https://github.com/zy84338719/upftp
+Depends: libc6 (>= 2.17)

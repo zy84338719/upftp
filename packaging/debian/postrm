@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Post-remove script for upftp
+
+set -e
+
+case "$1" in
+    purge)
+        # Remove systemd service file
+        rm -f /etc/systemd/system/upftp.service
+        systemctl daemon-reload
+        
+        # Remove user and group
+        if getent passwd upftp >/dev/null; then
+            userdel upftp
+        fi
+        
+        if getent group upftp >/dev/null; then
+            groupdel upftp
+        fi
+        
+        # Remove data directory (ask user first in real scenarios)
+        # rm -rf /var/lib/upftp
+        echo "Note: Data directory /var/lib/upftp was not removed automatically."
+        echo "Remove it manually if you don't need the data: sudo rm -rf /var/lib/upftp"
+        ;;
+esac
