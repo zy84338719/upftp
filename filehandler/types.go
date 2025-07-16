@@ -207,6 +207,19 @@ func FormatFileSize(size int64) string {
 }
 
 func IsPathSafe(path string) bool {
+	// 检查原始路径是否包含危险字符
+	if strings.Contains(path, "..") || strings.HasPrefix(path, "/") {
+		return false
+	}
+	
+	// 使用filepath.Clean清理路径后，再次检查
 	cleanPath := filepath.Clean(path)
+	
+	// 如果清理后的路径与原始路径不同，且原始路径包含".."，则不安全
+	if path != cleanPath && strings.Contains(path, "..") {
+		return false
+	}
+	
+	// 确保清理后的路径不以"/"开头且不包含".."
 	return !strings.Contains(cleanPath, "..") && !strings.HasPrefix(cleanPath, "/")
 }
