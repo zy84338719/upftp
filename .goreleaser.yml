@@ -30,6 +30,66 @@ archives:
       - goos: windows
         format: zip
 
+# Debian packages
+nfpms:
+  - id: packages
+    package_name: upftp
+    vendor: Zhang Yi
+    homepage: https://github.com/zy84338719/upftp
+    maintainer: Zhang Yi <zy84338719@gmail.com>
+    description: |
+      Modern cross-platform file sharing server with web interface.
+      UPFTP provides both HTTP and FTP protocols for easy file sharing.
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/bin
+    section: net
+    priority: optional
+    file_name_template: "{{ .ConventionalFileName }}"
+    contents:
+      - src: packaging/debian/postinst
+        dst: /usr/share/upftp/postinst
+        file_info:
+          mode: 0755
+      - src: packaging/debian/prerm  
+        dst: /usr/share/upftp/prerm
+        file_info:
+          mode: 0755
+      - src: packaging/debian/postrm
+        dst: /usr/share/upftp/postrm
+        file_info:
+          mode: 0755
+    scripts:
+      postinstall: packaging/debian/postinst
+      preremove: packaging/debian/prerm
+      postremove: packaging/debian/postrm
+    dependencies:
+      - libc6 (>= 2.17)
+    suggests:
+      - systemd
+
+# Homebrew tap
+brews:
+  - repository:
+      owner: zy84338719
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    folder: Formula
+    homepage: https://github.com/zy84338719/upftp
+    description: Modern cross-platform file sharing server
+    license: MIT
+    skip_upload: auto
+    test: |
+      assert_match "upftp", shell_output("#{bin}/upftp -h")
+    service: |
+      run [opt_bin/"upftp", "-auto", "-d", var/"upftp"]
+      keep_alive true
+      log_path var/"log/upftp.log"
+      error_log_path var/"log/upftp.error.log"
+      working_dir var/"upftp"
+
 checksum:
   name_template: 'checksums.txt'
 

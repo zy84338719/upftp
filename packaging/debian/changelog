@@ -1,0 +1,9 @@
+upftp ({{.Version}}) stable; urgency=medium
+
+  * Multi-language support (Chinese/English) with auto-detection
+  * Enhanced file preview capabilities
+  * Modern responsive web interface
+  * Cross-platform build improvements
+  * Security enhancements and bug fixes
+
+ -- Zhang Yi <zy84338719@gmail.com>  {{.Date}}
