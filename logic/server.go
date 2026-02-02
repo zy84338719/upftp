@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -45,6 +46,7 @@ func StartHTTPServer(ctx context.Context) error {
 
 	// API接口
 	mux.HandleFunc("/api/info", handleServerInfo)
+	mux.HandleFunc("/api/tree", handleDirectoryTree)
 
 	// 静态文件服务
 	mux.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(config.AppConfig.Root))))
@@ -101,8 +103,8 @@ func StartHTTPServer(ctx context.Context) error {
 		}
 
 		data := struct {
-			Files      []filehandler.FileInfo
-			ServerInfo *ServerInfo
+			Files       []filehandler.FileInfo
+			ServerInfo  *ServerInfo
 			CurrentPath string
 		}{
 			Files:       fileList,
@@ -259,4 +261,68 @@ func getFileIcon(isDir bool, fileType filehandler.FileType) string {
 		return "📁"
 	}
 	return filehandler.GetFileIcon(fileType)
+}
+
+// TreeNode 表示树形结构的节点
+type TreeNode struct {
+	Name     string     `json:"name"`
+	Path     string     `json:"path"`
+	IsDir    bool       `json:"isDir"`
+	Children []*TreeNode `json:"children,omitempty"`
+	Expanded bool       `json:"expanded,omitempty"`
+}
+
+// handleDirectoryTree 处理获取目录树结构的 API 请求
+func handleDirectoryTree(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	tree, err := buildDirectoryTree(config.AppConfig.Root, "")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonBytes, err := json.MarshalIndent(tree, "", "  ")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(jsonBytes)
+}
+
+// buildDirectoryTree 递归构建目录树
+func buildDirectoryTree(rootPath string, relativePath string) (*TreeNode, error) {
+	fullPath := path.Join(rootPath, relativePath)
+	
+	// 读取目录内容
+	files, err := ioutil.ReadDir(fullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	node := &TreeNode{
+		Name:  path.Base(relativePath),
+		Path:  "/" + strings.TrimPrefix(relativePath, "/"),
+		IsDir: true,
+	}
+
+	// 处理根目录的特殊情况
+	if relativePath == "" {
+		node.Name = "/"
+		node.Path = "/"
+	}
+
+	// 递归处理子目录
+	for _, file := range files {
+		if file.IsDir() {
+			childRelativePath := path.Join(relativePath, file.Name())
+			child, err := buildDirectoryTree(rootPath, childRelativePath)
+			if err == nil {
+				node.Children = append(node.Children, child)
+			}
+		}
+	}
+
+	return node, nil
 }
