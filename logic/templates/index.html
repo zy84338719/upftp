@@ -118,23 +118,152 @@
             background: #ecf0f1;
             border-bottom: 1px solid #bdc3c7;
         }
-        
+
         .breadcrumb-path {
             font-size: 1.1em;
             color: #2c3e50;
         }
-        
+
         .breadcrumb-path a {
             color: #3498db;
             text-decoration: none;
         }
-        
+
         .breadcrumb-path a:hover {
             text-decoration: underline;
         }
-        
+
+        .view-toggles {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .main-layout {
+            display: flex;
+            min-height: 500px;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 15px;
+            background: #ecf0f1;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .tree-view {
+            padding: 10px;
+        }
+
+        .tree-node {
+            margin-left: 0;
+        }
+
+        .tree-node-root {
+            margin-left: 0;
+        }
+
+        .tree-content {
+            display: flex;
+            align-items: center;
+            padding: 6px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+            margin-bottom: 2px;
+        }
+
+        .tree-content:hover {
+            background: #e9ecef;
+        }
+
+        .tree-content.selected {
+            background: #3498db;
+            color: white;
+        }
+
+        .tree-content.selected .tree-toggle {
+            color: white;
+        }
+
+        .tree-toggle {
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 5px;
+            font-size: 0.8em;
+            color: #95a5a6;
+            transition: transform 0.2s ease;
+        }
+
+        .tree-toggle.expanded {
+            transform: rotate(90deg);
+        }
+
+        .tree-toggle.leaf {
+            visibility: hidden;
+        }
+
+        .tree-icon {
+            margin-right: 8px;
+            font-size: 1.1em;
+        }
+
+        .tree-name {
+            flex: 1;
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tree-actions {
+            display: none;
+            gap: 5px;
+        }
+
+        .tree-content:hover .tree-actions {
+            display: flex;
+        }
+
+        .tree-action-btn {
+            padding: 2px 6px;
+            border: none;
+            background: rgba(52, 152, 219, 0.2);
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8em;
+            color: #3498db;
+        }
+
+        .tree-action-btn:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        .tree-children {
+            display: none;
+        }
+
+        .tree-children.show {
+            display: block;
+        }
+
         .file-list {
+            flex: 1;
             padding: 20px;
+            overflow-y: auto;
         }
         
         .search-bar {
@@ -469,53 +598,64 @@
                 📁 <span data-en="Current Path" data-zh="当前路径">Current Path</span>: <a href="/">/</a>{{.CurrentPath}}
             </div>
         </div>
-        
-        <div class="file-list">
-            <div class="search-bar">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="searchInput" class="search-input" 
-                       data-placeholder-en="Search files and folders..." 
-                       data-placeholder-zh="搜索文件和文件夹..."
-                       placeholder="Search files and folders...">
+
+        <div class="main-layout">
+            <!-- 左侧目录树 -->
+            <div class="sidebar">
+                <div class="sidebar-header" data-en="📁 Directory Tree" data-zh="📁 目录树">📁 Directory Tree</div>
+                <div class="tree-view" id="treeView">
+                    <div id="treeContainer"></div>
+                </div>
             </div>
-            
-            <div class="file-grid" id="fileGrid">
-                {{if .Files}}
-                    {{range .Files}}
-                    <div class="file-item" data-name="{{.Name}}" data-type="{{.FileTypeStr}}">
-                        <div class="file-info">
-                            <div class="file-icon">{{.Icon}}</div>
-                            <div class="file-details">
-                                {{if .IsDir}}
-                                    <h3><a href="{{.Path}}" style="text-decoration: none; color: inherit;">{{.Name}}</a></h3>
-                                    <p data-en="Directory" data-zh="目录">Directory</p>
-                                {{else}}
-                                    <h3>{{.Name}}</h3>
-                                    <p>{{.Size}} • {{.ModTime}} • {{.FileTypeStr}}</p>
+
+            <!-- 右侧文件列表 -->
+            <div class="file-list">
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" class="search-input"
+                           data-placeholder-en="Search files and folders..."
+                           data-placeholder-zh="搜索文件和文件夹..."
+                           placeholder="Search files and folders...">
+                </div>
+
+                <div class="file-grid" id="fileGrid">
+                    {{if .Files}}
+                        {{range .Files}}
+                        <div class="file-item" data-name="{{.Name}}" data-type="{{.FileTypeStr}}">
+                            <div class="file-info">
+                                <div class="file-icon">{{.Icon}}</div>
+                                <div class="file-details">
+                                    {{if .IsDir}}
+                                        <h3><a href="{{.Path}}" style="text-decoration: none; color: inherit;">{{.Name}}</a></h3>
+                                        <p data-en="Directory" data-zh="目录">Directory</p>
+                                    {{else}}
+                                        <h3>{{.Name}}</h3>
+                                        <p>{{.Size}} • {{.ModTime}} • {{.FileTypeStr}}</p>
+                                    {{end}}
+                                </div>
+                            </div>
+                            <div class="file-actions">
+                                {{if not .IsDir}}
+                                    {{if .CanPreview}}
+                                    <button class="btn btn-primary" onclick="showPreview('/preview/{{.Path}}', '{{.FileTypeStr}}', '{{.Name}}')">
+                                        👁️ <span data-en="Preview" data-zh="预览">Preview</span>
+                                    </button>
+                                    {{end}}
                                 {{end}}
+                                <a href="/download/{{.Path}}" class="btn btn-success">
+                                    💾 <span data-en="Download" data-zh="下载">Download</span>{{if .IsDir}} <span data-en="ZIP" data-zh="压缩包">ZIP</span>{{end}}
+                                </a>
                             </div>
                         </div>
-                        <div class="file-actions">
-                            {{if not .IsDir}}
-                                {{if .CanPreview}}
-                                <button class="btn btn-primary" onclick="showPreview('/preview/{{.Path}}', '{{.FileTypeStr}}', '{{.Name}}')">
-                                    👁️ <span data-en="Preview" data-zh="预览">Preview</span>
-                                </button>
-                                {{end}}
-                            {{end}}
-                            <a href="/download/{{.Path}}" class="btn btn-success">
-                                💾 <span data-en="Download" data-zh="下载">Download</span>{{if .IsDir}} <span data-en="ZIP" data-zh="压缩包">ZIP</span>{{end}}
-                            </a>
+                        {{end}}
+                    {{else}}
+                        <div class="empty-state">
+                            <div class="icon">📂</div>
+                            <h3 data-en="No files found" data-zh="未找到文件">No files found</h3>
+                            <p data-en="This directory is empty or no files match your search." data-zh="此目录为空或没有文件匹配您的搜索。">This directory is empty or no files match your search.</p>
                         </div>
-                    </div>
                     {{end}}
-                {{else}}
-                    <div class="empty-state">
-                        <div class="icon">📂</div>
-                        <h3 data-en="No files found" data-zh="未找到文件">No files found</h3>
-                        <p data-en="This directory is empty or no files match your search." data-zh="此目录为空或没有文件匹配您的搜索。">This directory is empty or no files match your search.</p>
-                    </div>
-                {{end}}
+                </div>
             </div>
         </div>
     </div>
@@ -583,11 +723,107 @@
         document.addEventListener('DOMContentLoaded', function() {
             const savedLang = localStorage.getItem('preferred-language') || detectLanguage();
             switchLanguage(savedLang);
+            loadDirectoryTree();
         });
-        
+
         // Get localized text
         function getLocalizedText(enText, zhText) {
             return currentLanguage === 'zh' ? zhText : enText;
+        }
+
+        // Load directory tree from API
+        async function loadDirectoryTree() {
+            const treeContainer = document.getElementById('treeContainer');
+            if (!treeContainer) return;
+
+            try {
+                const response = await fetch('/api/tree');
+                if (!response.ok) throw new Error('Failed to load tree');
+                const tree = await response.json();
+                // Mark nodes to expand based on current path
+                markPathForExpansion(tree, window.location.pathname);
+                treeContainer.innerHTML = renderTreeNode(tree, true);
+            } catch (error) {
+                treeContainer.innerHTML = `<div style="text-align: center; padding: 20px; color: #7f8c8d;">
+                    ${getLocalizedText('Failed to load directory tree', '加载目录树失败')}: ${error.message}
+                </div>`;
+            }
+        }
+
+        // Mark nodes along the current path to be expanded
+        function markPathForExpansion(node, currentPath) {
+            if (!node || !currentPath || currentPath === '/') return;
+
+            // Normalize paths
+            const normalizedNodePath = node.path.endsWith('/') ? node.path.slice(0, -1) : node.path;
+            const normalizedCurrentPath = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath;
+
+            // Check if current path starts with this node's path
+            if (normalizedCurrentPath.startsWith(normalizedNodePath + '/') || normalizedCurrentPath === normalizedNodePath) {
+                node.expanded = true;
+
+                // Recursively mark children
+                if (node.children) {
+                    for (const child of node.children) {
+                        markPathForExpansion(child, currentPath);
+                    }
+                }
+            }
+        }
+
+        // Render tree node recursively
+        function renderTreeNode(node, isRoot = false) {
+            const hasChildren = node.children && node.children.length > 0;
+            const paddingLeft = isRoot ? '0px' : '20px';
+            const toggleClass = hasChildren ? '' : 'leaf';
+            const expandedClass = node.expanded ? 'expanded' : '';
+            const showChildrenClass = node.expanded ? 'show' : '';
+            // Use isDir to determine icon
+            const icon = node.isDir ? '📁' : '📄';
+
+            let html = `
+                <div class="tree-node ${isRoot ? 'tree-node-root' : ''}" style="padding-left: ${paddingLeft}">
+                    <div class="tree-content" onclick="handleTreeNodeClick(this, '${node.path}', ${hasChildren})">
+                        <span class="tree-toggle ${toggleClass} ${expandedClass}">▶</span>
+                        <span class="tree-icon">${icon}</span>
+                        <span class="tree-name">${node.name === '/' ? getLocalizedText('Root', '根目录') : node.name}</span>
+                        <div class="tree-actions">
+                            ${node.isDir ? `
+                                <a href="/download${node.path}" class="tree-action-btn" title="${getLocalizedText('Download as ZIP', '下载为压缩包')}">ZIP</a>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ${hasChildren ? `
+                        <div class="tree-children ${showChildrenClass}">
+                            ${node.children.map(child => renderTreeNode(child)).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            return html;
+        }
+
+        // Handle tree node click
+        function handleTreeNodeClick(contentElement, path, hasChildren) {
+            const toggle = contentElement.querySelector('.tree-toggle');
+
+            if (!hasChildren) {
+                // If it's a leaf node, navigate to that directory
+                window.location.href = path;
+                return;
+            }
+
+            // Toggle expanded state
+            toggle.classList.toggle('expanded');
+
+            // Find the children container
+            const treeNode = contentElement.parentElement;
+            const children = treeNode.querySelector('.tree-children');
+
+            if (children) {
+                children.classList.toggle('show');
+            }
         }
         
         // Search functionality
