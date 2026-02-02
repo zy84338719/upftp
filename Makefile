@@ -1,6 +1,6 @@
 VERSION = $(shell git describe --always --tags)
 BUILD = $(shell date +%F)
-COMMIT_SHA=$(shell git rev-parse --shor# Release packages using GoReleaser
+COMMIT_SHA=$(shell git rev-parse --short HEAD)# Release packages using GoReleaser
 .PHONY: release
 release:
 	@echo "Creating release with GoReleaser..."
