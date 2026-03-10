@@ -42,7 +42,7 @@ build-windows:
 	GOOS=windows GOARCH=amd64 $(GOBUILD) $(BUILD_FLAGS) -o dist/$(BINARY_NAME)_windows_amd64.exe ./
 
 test:
-	$(GOTEST) -v -race -coverprofile=coverage.out .//*
+	$(GOTEST) -v -race -coverprofile=coverage.out ./...
 
 coverage:
 	$(GOTEST) -v -race -coverprofile=coverage.out ./...
