@@ -8,15 +8,15 @@ import (
 )
 
 type Config struct {
-	Port        string
-	FTPPort     string
-	Root        string
-	AutoSelect  bool
-	EnableFTP   bool
-	Username    string
-	Password    string
-	Version     string
-	LastCommit  string
+	Port       string
+	FTPPort    string
+	Root       string
+	AutoSelect bool
+	EnableFTP  bool
+	Username   string
+	Password   string
+	Version    string
+	LastCommit string
 }
 
 var AppConfig *Config
@@ -63,7 +63,7 @@ func Init(version, lastCommit string) {
 }
 
 func (c *Config) GetHTTPPort() int {
-	port := c.Port[1:] // 去掉冒号
+	port := c.Port[1:]
 	if p, err := strconv.Atoi(port); err == nil {
 		return p
 	}
@@ -71,9 +71,17 @@ func (c *Config) GetHTTPPort() int {
 }
 
 func (c *Config) GetFTPPort() int {
-	port := c.FTPPort[1:] // 去掉冒号
+	port := c.FTPPort[1:]
 	if p, err := strconv.Atoi(port); err == nil {
 		return p
 	}
 	return 2121
+}
+
+func (c *Config) HTTPAddr() string {
+	return c.Port
+}
+
+func (c *Config) FTPAddr() string {
+	return c.FTPPort
 }

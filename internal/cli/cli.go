@@ -1,4 +1,4 @@
-package logic
+package cli
 
 import (
 	"bufio"
@@ -10,23 +10,31 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/zy84338719/upftp/config"
+	"github.com/zy84338719/upftp/internal/config"
 )
 
-var fileMap map[string]string
-var serverIP string
-
-func SetServerIP(ip string) {
-	serverIP = ip
+type CLI struct {
+	serverIP string
+	fileMap  map[string]string
 }
 
-func ScanDirectory(pathname string) map[string]string {
+func NewCLI() *CLI {
+	return &CLI{
+		fileMap: make(map[string]string),
+	}
+}
+
+func (c *CLI) SetServerIP(ip string) {
+	c.serverIP = ip
+}
+
+func (c *CLI) ScanDirectory(pathname string) map[string]string {
 	files := make(map[string]string)
-	scanDir(pathname, files)
+	c.scanDir(pathname, files)
 	return files
 }
 
-func scanDir(pathname string, m map[string]string) {
+func (c *CLI) scanDir(pathname string, m map[string]string) {
 	rd, err := ioutil.ReadDir(pathname)
 	if err != nil {
 		fmt.Printf("Error reading directory %s: %v\n", pathname, err)
@@ -35,89 +43,102 @@ func scanDir(pathname string, m map[string]string) {
 
 	for _, fi := range rd {
 		if fi.IsDir() {
-			scanDir(path.Join(pathname, fi.Name()), m)
+			c.scanDir(path.Join(pathname, fi.Name()), m)
 		} else {
 			dir := strings.Replace(pathname, config.AppConfig.Root, "", 1)
 			var downloadURL string
 			if len(dir) > 0 {
 				dir = path.Join(dir)
-				downloadURL = fmt.Sprintf("http://%s%s/download/%s/%s", 
-					serverIP, config.AppConfig.Port, dir, fi.Name())
+				downloadURL = fmt.Sprintf("http://%s%s/download/%s/%s",
+					c.serverIP, config.AppConfig.Port, dir, fi.Name())
 			} else {
-				downloadURL = fmt.Sprintf("http://%s%s/download/%s", 
-					serverIP, config.AppConfig.Port, fi.Name())
+				downloadURL = fmt.Sprintf("http://%s%s/download/%s",
+					c.serverIP, config.AppConfig.Port, fi.Name())
 			}
 			m[fi.Name()] = downloadURL
 		}
 	}
 }
 
-func StartCommandInterface(ctx context.Context, s chan os.Signal) {
-	fileMap = ScanDirectory(config.AppConfig.Root)
-	
-	if len(fileMap) == 0 {
+func (c *CLI) Start(ctx context.Context, s chan os.Signal) {
+	c.fileMap = c.ScanDirectory(config.AppConfig.Root)
+
+	if len(c.fileMap) == 0 {
 		fmt.Println("No files found in the directory")
 		s <- syscall.SIGQUIT
 		return
 	}
 
+	c.printBanner()
+	c.runLoop(s)
+}
+
+func (c *CLI) printBanner() {
 	fmt.Printf("\n╔════════════════════════════════════════════════════════════════╗\n")
 	fmt.Printf("║                          UPFTP SERVER                         ║\n")
 	fmt.Printf("╠════════════════════════════════════════════════════════════════╣\n")
-	fmt.Printf("║ Web Interface: http://%-39s ║\n", serverIP + config.AppConfig.Port)
+	fmt.Printf("║ Web Interface: http://%-39s ║\n", c.serverIP+config.AppConfig.Port)
 	if config.AppConfig.EnableFTP {
-		fmt.Printf("║ FTP Server:    ftp://%-40s ║\n", serverIP + config.AppConfig.FTPPort)
-		fmt.Printf("║ FTP Login:     %s / %s%-26s ║\n", 
-			config.AppConfig.Username, 
+		fmt.Printf("║ FTP Server:    ftp://%-40s ║\n", c.serverIP+config.AppConfig.FTPPort)
+		fmt.Printf("║ FTP Login:     %s / %s%-26s ║\n",
+			config.AppConfig.Username,
 			config.AppConfig.Password,
 			strings.Repeat(" ", 26-len(config.AppConfig.Username)-len(config.AppConfig.Password)))
 	}
 	fmt.Printf("║ Root Path:     %-47s ║\n", config.AppConfig.Root)
-	fmt.Printf("║ Files Found:   %-47d ║\n", len(fileMap))
+	fmt.Printf("║ Files Found:   %-47d ║\n", len(c.fileMap))
 	fmt.Printf("╚════════════════════════════════════════════════════════════════╝\n\n")
+}
 
+func (c *CLI) runLoop(s chan os.Signal) {
 	for {
-		fmt.Printf("Commands:\n")
-		fmt.Printf("  [1] Search files\n")
-		fmt.Printf("  [2] List all files\n")
-		fmt.Printf("  [3] Show download examples\n")
-		fmt.Printf("  [4] Refresh file list\n")
-		if config.AppConfig.EnableFTP {
-			fmt.Printf("  [5] FTP connection info\n")
-		}
-		fmt.Printf("  [q] Quit server\n")
-		fmt.Printf("\nEnter command: ")
-
-		var option string
-		_, _ = fmt.Scanln(&option)
-
-		switch strings.ToLower(option) {
-		case "1":
-			searchFiles()
-		case "2":
-			listAllFiles()
-		case "3":
-			showDownloadExamples()
-		case "4":
-			refreshFileList()
-		case "5":
-			if config.AppConfig.EnableFTP {
-				showFTPInfo()
-			} else {
-				fmt.Println("Invalid option. FTP is not enabled.")
-			}
-		case "q", "quit", "exit":
-			fmt.Println("\nShutting down server...")
-			s <- syscall.SIGQUIT
-			return
-		default:
-			fmt.Println("Invalid option, please try again.")
-		}
+		c.printMenu()
+		c.handleInput(s)
 		fmt.Println()
 	}
 }
 
-func searchFiles() {
+func (c *CLI) printMenu() {
+	fmt.Printf("Commands:\n")
+	fmt.Printf("  [1] Search files\n")
+	fmt.Printf("  [2] List all files\n")
+	fmt.Printf("  [3] Show download examples\n")
+	fmt.Printf("  [4] Refresh file list\n")
+	if config.AppConfig.EnableFTP {
+		fmt.Printf("  [5] FTP connection info\n")
+	}
+	fmt.Printf("  [q] Quit server\n")
+	fmt.Printf("\nEnter command: ")
+}
+
+func (c *CLI) handleInput(s chan os.Signal) {
+	var option string
+	_, _ = fmt.Scanln(&option)
+
+	switch strings.ToLower(option) {
+	case "1":
+		c.searchFiles()
+	case "2":
+		c.listAllFiles()
+	case "3":
+		c.showDownloadExamples()
+	case "4":
+		c.refreshFileList()
+	case "5":
+		if config.AppConfig.EnableFTP {
+			c.showFTPInfo()
+		} else {
+			fmt.Println("Invalid option. FTP is not enabled.")
+		}
+	case "q", "quit", "exit":
+		fmt.Println("\nShutting down server...")
+		s <- syscall.SIGQUIT
+	default:
+		fmt.Println("Invalid option, please try again.")
+	}
+}
+
+func (c *CLI) searchFiles() {
 	fmt.Print("Enter search term (or press Enter to show all): ")
 	reader := bufio.NewReader(os.Stdin)
 	term, _ := reader.ReadString('\n')
@@ -126,8 +147,8 @@ func searchFiles() {
 	found := false
 	fmt.Printf("\n%-50s %-60s\n", "FILE NAME", "DOWNLOAD URL")
 	fmt.Println(strings.Repeat("=", 115))
-	
-	for filename, url := range fileMap {
+
+	for filename, url := range c.fileMap {
 		if term == "" || strings.Contains(strings.ToLower(filename), strings.ToLower(term)) {
 			found = true
 			fmt.Printf("%-50s %-60s\n", truncateString(filename, 48), url)
@@ -139,24 +160,23 @@ func searchFiles() {
 	}
 }
 
-func listAllFiles() {
+func (c *CLI) listAllFiles() {
 	fmt.Printf("\n%-50s %-60s\n", "FILE NAME", "DOWNLOAD URL")
 	fmt.Println(strings.Repeat("=", 115))
-	
-	for filename, url := range fileMap {
+
+	for filename, url := range c.fileMap {
 		fmt.Printf("%-50s %-60s\n", truncateString(filename, 48), url)
 	}
 }
 
-func showDownloadExamples() {
-	if len(fileMap) == 0 {
+func (c *CLI) showDownloadExamples() {
+	if len(c.fileMap) == 0 {
 		fmt.Println("No files available for download examples.")
 		return
 	}
 
-	// 获取第一个文件作为示例
 	var exampleFile, exampleURL string
-	for filename, url := range fileMap {
+	for filename, url := range c.fileMap {
 		exampleFile = filename
 		exampleURL = url
 		break
@@ -168,33 +188,33 @@ func showDownloadExamples() {
 	fmt.Printf("║ Example file: %-47s ║\n", truncateString(exampleFile, 45))
 	fmt.Printf("╠════════════════════════════════════════════════════════════════╣\n")
 	fmt.Printf("║ Browser:                                                       ║\n")
-	fmt.Printf("║   Open: http://%-46s ║\n", serverIP + config.AppConfig.Port)
+	fmt.Printf("║   Open: http://%-46s ║\n", c.serverIP+config.AppConfig.Port)
 	fmt.Printf("║                                                                ║\n")
 	fmt.Printf("║ Command Line Tools:                                            ║\n")
 	fmt.Printf("║   curl -O \"%-53s\" ║\n", truncateString(exampleURL, 51))
 	fmt.Printf("║   wget \"%-55s\" ║\n", truncateString(exampleURL, 53))
-	fmt.Printf("║                                                                ║\n")
 	if config.AppConfig.EnableFTP {
+		fmt.Printf("║                                                                ║\n")
 		fmt.Printf("║ FTP Client:                                                    ║\n")
-		fmt.Printf("║   ftp %-56s ║\n", serverIP)
+		fmt.Printf("║   ftp %-56s ║\n", c.serverIP)
 		fmt.Printf("║   Username: %-50s ║\n", config.AppConfig.Username)
 		fmt.Printf("║   Password: %-50s ║\n", config.AppConfig.Password)
-		fmt.Printf("║                                                                ║\n")
 	}
+	fmt.Printf("║                                                                ║\n")
 	fmt.Printf("╚════════════════════════════════════════════════════════════════╝\n")
 }
 
-func showFTPInfo() {
+func (c *CLI) showFTPInfo() {
 	fmt.Printf("\n╔════════════════════════════════════════════════════════════════╗\n")
 	fmt.Printf("║                        FTP CONNECTION INFO                    ║\n")
 	fmt.Printf("╠════════════════════════════════════════════════════════════════╣\n")
-	fmt.Printf("║ Server:    %-51s ║\n", serverIP)
+	fmt.Printf("║ Server:    %-51s ║\n", c.serverIP)
 	fmt.Printf("║ Port:      %-51s ║\n", config.AppConfig.FTPPort[1:])
 	fmt.Printf("║ Username:  %-51s ║\n", config.AppConfig.Username)
 	fmt.Printf("║ Password:  %-51s ║\n", config.AppConfig.Password)
 	fmt.Printf("║                                                                ║\n")
 	fmt.Printf("║ Example FTP commands:                                          ║\n")
-	fmt.Printf("║   ftp %s                                              ║\n", serverIP)
+	fmt.Printf("║   ftp %s                                              ║\n", c.serverIP)
 	fmt.Printf("║   > Name: %s                                          ║\n", config.AppConfig.Username)
 	fmt.Printf("║   > Password: %s                                      ║\n", config.AppConfig.Password)
 	fmt.Printf("║   > ls                                                         ║\n")
@@ -203,10 +223,10 @@ func showFTPInfo() {
 	fmt.Printf("╚════════════════════════════════════════════════════════════════╝\n")
 }
 
-func refreshFileList() {
+func (c *CLI) refreshFileList() {
 	fmt.Println("Refreshing file list...")
-	fileMap = ScanDirectory(config.AppConfig.Root)
-	fmt.Printf("Found %d files in directory.\n", len(fileMap))
+	c.fileMap = c.ScanDirectory(config.AppConfig.Root)
+	fmt.Printf("Found %d files in directory.\n", len(c.fileMap))
 }
 
 func truncateString(s string, maxLen int) string {

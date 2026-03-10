@@ -1,0 +1,25 @@
+[Unit]
+Description=UPFTP File Sharing Server
+Documentation=https://github.com/zy84338719/upftp
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=upftp
+Group=upftp
+ExecStart=/usr/bin/upftp -auto -d /var/lib/upftp
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/upftp
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
