@@ -685,13 +685,16 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="version-badge">v2.2.0</div>
+            <div class="version-badge">{{.ProjectName}} v{{.Version}}</div>
             <div class="language-selector">
                 <button class="language-btn" onclick="switchLanguage('en')" id="lang-en">🇺🇸 EN</button>
                 <button class="language-btn" onclick="switchLanguage('zh')" id="lang-zh">🇨🇳 中文</button>
             </div>
             <h1 data-en="🚀 UPFTP" data-zh="🚀 UPFTP">🚀 UPFTP</h1>
             <p data-en="AI-First File Sharing Server" data-zh="AI 时代的文件共享服务器">AI-First File Sharing Server</p>
+            <p style="font-size: 0.85em; margin-top: 8px; opacity: 0.7;">
+                <a href="{{.ProjectURL}}" target="_blank" style="color: white; text-decoration: none;">{{.ProjectURL}}</a>
+            </p>
         </div>
 
         <div class="features-bar">

@@ -24,6 +24,7 @@ builds:
       - -s -w
       - -X main.Version={{.Version}}
       - -X main.LastCommit={{.ShortCommit}}
+      - -X main.BuildDate={{.Date}}
     binary: upftp
 
 archives:

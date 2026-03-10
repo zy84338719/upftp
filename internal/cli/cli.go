@@ -79,6 +79,7 @@ func (c *CLI) printBanner() {
 	fmt.Printf("║      ╚═══╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚═════╝                  ║\n")
 	fmt.Printf("║                                                                      ║\n")
 	fmt.Printf("║              AI-First File Sharing Server v%-24s║\n", config.AppConfig.Version)
+	fmt.Printf("║              Build: %-48s║\n", config.AppConfig.LastCommit+" @ "+config.AppConfig.BuildDate)
 	fmt.Printf("╠══════════════════════════════════════════════════════════════════════╣\n")
 	fmt.Printf("║                                                                      ║\n")
 	fmt.Printf("║  🌐 HTTP Server:    http://%-40s║\n", c.serverIP+config.AppConfig.Port)
@@ -100,7 +101,10 @@ func (c *CLI) printBanner() {
 	}
 	fmt.Printf("║     • MCP Server for AI Integration                                  ║\n")
 	fmt.Printf("║     • QR Code for Mobile Access                                      ║\n")
+	fmt.Printf("║     • Interactive CLI Configuration                                  ║\n")
 	fmt.Printf("║                                                                      ║\n")
+	fmt.Printf("╠══════════════════════════════════════════════════════════════════════╣\n")
+	fmt.Printf("║  🔗 Homepage: %-54s║\n", truncateString(config.AppConfig.ProjectURL, 54))
 	fmt.Printf("╚══════════════════════════════════════════════════════════════════════╝\n")
 }
 
@@ -120,8 +124,10 @@ func (c *CLI) printMenu() {
 	fmt.Printf("│  [3] 📥 Download examples     [4] 🔄 Refresh file list         │\n")
 	if config.AppConfig.EnableFTP {
 		fmt.Printf("│  [5] 📁 FTP connection info   [6] ℹ️  Server status            │\n")
+		fmt.Printf("│  [7] ⚙️  Configuration        [8] 📖 About & Features         │\n")
 	} else {
-		fmt.Printf("│  [5] ℹ️  Server status        [7] 📖 About & Features         │\n")
+		fmt.Printf("│  [5] ℹ️  Server status        [6] ⚙️  Configuration            │\n")
+		fmt.Printf("│  [7] 📖 About & Features                                     │\n")
 	}
 	fmt.Printf("│  [v] 📌 Version info          [q] 🚪 Quit server               │\n")
 	fmt.Printf("└─────────────────────────────────────────────────────────────────┘\n")
@@ -151,9 +157,15 @@ func (c *CLI) handleInput(s chan os.Signal) {
 		if config.AppConfig.EnableFTP {
 			c.showServerStatus()
 		} else {
-			c.showAbout()
+			c.showConfigMenu(s)
 		}
 	case "7":
+		if config.AppConfig.EnableFTP {
+			c.showConfigMenu(s)
+		} else {
+			c.showAbout()
+		}
+	case "8":
 		c.showAbout()
 	case "v", "version":
 		c.showVersion()
@@ -170,12 +182,13 @@ func (c *CLI) showVersion() {
 	fmt.Printf("║                      VERSION INFORMATION                      ║\n")
 	fmt.Printf("╠════════════════════════════════════════════════════════════════╣\n")
 	fmt.Printf("║                                                                ║\n")
-	fmt.Printf("║  UPFTP Version:    %-43s║\n", config.AppConfig.Version)
-	fmt.Printf("║  Git Commit:       %-43s║\n", config.AppConfig.LastCommit)
-	fmt.Printf("║  Go Version:       %-43s║\n", "go1.23+")
-	fmt.Printf("║  Build Date:       %-43s║\n", getBuildDate())
+	fmt.Printf("║  🚀 %s Version:    %-42s║\n", config.AppConfig.ProjectName, config.AppConfig.Version)
+	fmt.Printf("║  🔧 Git Commit:       %-41s║\n", config.AppConfig.LastCommit)
+	fmt.Printf("║  📅 Build Date:       %-41s║\n", config.AppConfig.BuildDate)
+	fmt.Printf("║  🐹 Go Version:       %-41s║\n", config.AppConfig.GoVersion)
+	fmt.Printf("║  💻 Platform:         %-41s║\n", config.AppConfig.Platform)
 	fmt.Printf("║                                                                ║\n")
-	fmt.Printf("║  Repository:       https://github.com/zy84338719/upftp         ║\n")
+	fmt.Printf("║  🏠 Project Homepage: %-40s║\n", truncateString(config.AppConfig.ProjectURL, 40))
 	fmt.Printf("║                                                                ║\n")
 	fmt.Printf("╚════════════════════════════════════════════════════════════════╝\n")
 }
@@ -207,10 +220,10 @@ func (c *CLI) showServerStatus() {
 
 func (c *CLI) showAbout() {
 	fmt.Printf("\n╔════════════════════════════════════════════════════════════════╗\n")
-	fmt.Printf("║                    ABOUT UPFTP v%-29s║\n", config.AppConfig.Version)
+	fmt.Printf("║                  ABOUT %s v%-32s║\n", config.AppConfig.ProjectName, config.AppConfig.Version)
 	fmt.Printf("╠════════════════════════════════════════════════════════════════╣\n")
 	fmt.Printf("║                                                                ║\n")
-	fmt.Printf("║  UPFTP is an AI-first lightweight file sharing server.        ║\n")
+	fmt.Printf("║  %s is an AI-first lightweight file sharing server.       ║\n", config.AppConfig.ProjectName)
 	fmt.Printf("║                                                                ║\n")
 	fmt.Printf("║  ✨ Key Features:                                              ║\n")
 	fmt.Printf("║     • Modern responsive Web UI with file preview              ║\n")
@@ -223,12 +236,20 @@ func (c *CLI) showAbout() {
 	fmt.Printf("║     • Multi-language support (EN/ZH)                          ║\n")
 	fmt.Printf("║     • YAML configuration file support                         ║\n")
 	fmt.Printf("║     • HTTPS support with custom certificates                  ║\n")
+	fmt.Printf("║     • Interactive CLI configuration                           ║\n")
 	fmt.Printf("║                                                                ║\n")
 	fmt.Printf("║  🔗 Links:                                                     ║\n")
+	fmt.Printf("║     Homepage:  %-47s║\n", truncateString(config.AppConfig.ProjectURL, 47))
 	fmt.Printf("║     GitHub:    https://github.com/zy84338719/upftp            ║\n")
 	fmt.Printf("║     Issues:    https://github.com/zy84338719/upftp/issues     ║\n")
 	fmt.Printf("║                                                                ║\n")
 	fmt.Printf("║  📄 License: MIT                                               ║\n")
+	fmt.Printf("║                                                                ║\n")
+	fmt.Printf("║  💻 Build Info:                                                ║\n")
+	fmt.Printf("║     Version:   %-47s║\n", config.AppConfig.Version)
+	fmt.Printf("║     Commit:    %-47s║\n", config.AppConfig.LastCommit)
+	fmt.Printf("║     Built:     %-47s║\n", config.AppConfig.BuildDate)
+	fmt.Printf("║     Platform:  %-47s║\n", config.AppConfig.Platform)
 	fmt.Printf("║                                                                ║\n")
 	fmt.Printf("╚════════════════════════════════════════════════════════════════╝\n")
 }
@@ -390,4 +411,283 @@ func formatSize(bytes int64) string {
 
 func getBuildDate() string {
 	return "2026-03-11"
+}
+
+func (c *CLI) showConfigMenu(s chan os.Signal) {
+	for {
+		c.printConfigMenu()
+		var option string
+		_, _ = fmt.Scanln(&option)
+
+		switch strings.ToLower(option) {
+		case "1":
+			c.configureFTPCredentials()
+		case "2":
+			c.configureHTTPAuth()
+		case "3":
+			c.toggleFTPServer()
+		case "4":
+			c.toggleMCPServer()
+		case "5":
+			c.configurePorts()
+		case "6":
+			c.saveConfiguration()
+		case "7":
+			c.showCurrentConfig()
+		case "b", "back":
+			return
+		case "q", "quit", "exit":
+			fmt.Println("\n👋 Shutting down server...")
+			s <- syscall.SIGQUIT
+			return
+		default:
+			fmt.Println("❌ Invalid option, please try again.")
+		}
+		fmt.Println()
+	}
+}
+
+func (c *CLI) printConfigMenu() {
+	fmt.Printf("\n╔════════════════════════════════════════════════════════════════╗\n")
+	fmt.Printf("║                     CONFIGURATION MENU                         ║\n")
+	fmt.Printf("╠════════════════════════════════════════════════════════════════╣\n")
+	fmt.Printf("║                                                                ║\n")
+	fmt.Printf("║  [1] 👤 FTP Credentials        %30s║\n", "Set FTP username/password")
+	fmt.Printf("║  [2] 🔐 HTTP Authentication    %30s║\n", "Set HTTP basic auth")
+	fmt.Printf("║  [3] 📁 FTP Server             %30s║\n", boolToStr(config.AppConfig.EnableFTP))
+	fmt.Printf("║  [4] 🤖 MCP Server             %30s║\n", boolToStr(config.AppConfig.EnableMCP))
+	fmt.Printf("║  [5] 🔌 Server Ports           %30s║\n", "Configure ports")
+	fmt.Printf("║  [6] 💾 Save Configuration     %30s║\n", "Save to YAML file")
+	fmt.Printf("║  [7] 👁️  View Current Config   %30s║\n", "Show all settings")
+	fmt.Printf("║  [b] ↩️  Back to Main Menu                                       ║\n")
+	fmt.Printf("║  [q] 🚪 Quit Server                                            ║\n")
+	fmt.Printf("║                                                                ║\n")
+	fmt.Printf("╚════════════════════════════════════════════════════════════════╝\n")
+	fmt.Printf("\nEnter command: ")
+}
+
+func (c *CLI) configureFTPCredentials() {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Printf("\n┌──────────────────────────────────────────────────────────────┐\n")
+	fmt.Printf("│              FTP Credentials Configuration                   │\n")
+	fmt.Printf("├──────────────────────────────────────────────────────────────┤\n")
+	fmt.Printf("│  Current Username: %-41s║\n", config.AppConfig.Username)
+	fmt.Printf("│  Current Password: %-41s║\n", maskPassword(config.AppConfig.Password))
+	fmt.Printf("└──────────────────────────────────────────────────────────────┘\n")
+
+	fmt.Print("\nEnter new FTP username (press Enter to keep current): ")
+	username, _ := reader.ReadString('\n')
+	username = strings.TrimSpace(username)
+	if username != "" {
+		config.AppConfig.Username = username
+		fmt.Printf("✅ FTP username updated to: %s\n", username)
+	}
+
+	fmt.Print("Enter new FTP password (press Enter to keep current): ")
+	password, _ := reader.ReadString('\n')
+	password = strings.TrimSpace(password)
+	if password != "" {
+		config.AppConfig.Password = password
+		fmt.Println("✅ FTP password updated.")
+	}
+
+	fmt.Println("\n💡 Note: FTP credentials are now in memory.")
+	fmt.Println("   Use 'Save Configuration' to persist changes to file.")
+}
+
+func (c *CLI) configureHTTPAuth() {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Printf("\n┌──────────────────────────────────────────────────────────────┐\n")
+	fmt.Printf("│            HTTP Authentication Configuration                 │\n")
+	fmt.Printf("├──────────────────────────────────────────────────────────────┤\n")
+	fmt.Printf("│  Status: %-51s║\n", boolToStr(config.AppConfig.HTTPAuth.Enabled))
+	if config.AppConfig.HTTPAuth.Enabled {
+		fmt.Printf("│  Username: %-49s║\n", config.AppConfig.HTTPAuth.Username)
+		fmt.Printf("│  Password: %-49s║\n", maskPassword(config.AppConfig.HTTPAuth.Password))
+	}
+	fmt.Printf("└──────────────────────────────────────────────────────────────┘\n")
+
+	fmt.Print("\nEnable HTTP authentication? (y/n): ")
+	enableStr, _ := reader.ReadString('\n')
+	enableStr = strings.ToLower(strings.TrimSpace(enableStr))
+
+	if enableStr == "y" || enableStr == "yes" {
+		config.AppConfig.HTTPAuth.Enabled = true
+
+		fmt.Print("Enter HTTP auth username: ")
+		username, _ := reader.ReadString('\n')
+		username = strings.TrimSpace(username)
+		if username != "" {
+			config.AppConfig.HTTPAuth.Username = username
+		}
+
+		fmt.Print("Enter HTTP auth password: ")
+		password, _ := reader.ReadString('\n')
+		password = strings.TrimSpace(password)
+		if password != "" {
+			config.AppConfig.HTTPAuth.Password = password
+		}
+
+		fmt.Println("✅ HTTP authentication enabled and configured.")
+	} else if enableStr == "n" || enableStr == "no" {
+		config.AppConfig.HTTPAuth.Enabled = false
+		fmt.Println("✅ HTTP authentication disabled.")
+	}
+}
+
+func (c *CLI) toggleFTPServer() {
+	fmt.Printf("\n┌──────────────────────────────────────────────────────────────┐\n")
+	fmt.Printf("│                    FTP Server Toggle                          │\n")
+	fmt.Printf("├──────────────────────────────────────────────────────────────┤\n")
+	fmt.Printf("│  Current Status: %-43s║\n", boolToStr(config.AppConfig.EnableFTP))
+	fmt.Printf("│                                                              ║\n")
+	fmt.Printf("│  ⚠️  Note: Changes require server restart to take effect     ║\n")
+	fmt.Printf("└──────────────────────────────────────────────────────────────┘\n")
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("\nToggle FTP server? (y/n): ")
+	toggleStr, _ := reader.ReadString('\n')
+	toggleStr = strings.ToLower(strings.TrimSpace(toggleStr))
+
+	if toggleStr == "y" || toggleStr == "yes" {
+		config.AppConfig.EnableFTP = !config.AppConfig.EnableFTP
+		fmt.Printf("✅ FTP server is now: %s\n", boolToStr(config.AppConfig.EnableFTP))
+		if config.AppConfig.EnableFTP {
+			fmt.Println("   Restart server to start FTP service.")
+		} else {
+			fmt.Println("   FTP service will stop after restart.")
+		}
+	}
+}
+
+func (c *CLI) toggleMCPServer() {
+	fmt.Printf("\n┌──────────────────────────────────────────────────────────────┐\n")
+	fmt.Printf("│                    MCP Server Toggle                          │\n")
+	fmt.Printf("├──────────────────────────────────────────────────────────────┤\n")
+	fmt.Printf("│  Current Status: %-43s║\n", boolToStr(config.AppConfig.EnableMCP))
+	fmt.Printf("│                                                              ║\n")
+	fmt.Printf("│  ℹ️  MCP enables AI assistants (like Claude) to interact     ║\n")
+	fmt.Printf("│     with files through the Model Context Protocol            ║\n")
+	fmt.Printf("│  ⚠️  Note: Changes require server restart to take effect     ║\n")
+	fmt.Printf("└──────────────────────────────────────────────────────────────┘\n")
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("\nToggle MCP server? (y/n): ")
+	toggleStr, _ := reader.ReadString('\n')
+	toggleStr = strings.ToLower(strings.TrimSpace(toggleStr))
+
+	if toggleStr == "y" || toggleStr == "yes" {
+		config.AppConfig.EnableMCP = !config.AppConfig.EnableMCP
+		fmt.Printf("✅ MCP server is now: %s\n", boolToStr(config.AppConfig.EnableMCP))
+		if config.AppConfig.EnableMCP {
+			fmt.Println("   Restart with -enable-mcp flag to start MCP service.")
+		}
+	}
+}
+
+func (c *CLI) configurePorts() {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Printf("\n┌──────────────────────────────────────────────────────────────┐\n")
+	fmt.Printf("│                   Port Configuration                          │\n")
+	fmt.Printf("├──────────────────────────────────────────────────────────────┤\n")
+	fmt.Printf("│  Current HTTP Port: %-40s║\n", config.AppConfig.Port[1:])
+	fmt.Printf("│  Current FTP Port:  %-40s║\n", config.AppConfig.FTPPort[1:])
+	fmt.Printf("│                                                              ║\n")
+	fmt.Printf("│  ⚠️  Note: Changes require server restart to take effect     ║\n")
+	fmt.Printf("└──────────────────────────────────────────────────────────────┘\n")
+
+	fmt.Print("\nEnter new HTTP port (press Enter to keep current): ")
+	httpPort, _ := reader.ReadString('\n')
+	httpPort = strings.TrimSpace(httpPort)
+	if httpPort != "" {
+		config.AppConfig.Port = ":" + httpPort
+		fmt.Printf("✅ HTTP port updated to: %s\n", httpPort)
+	}
+
+	fmt.Print("Enter new FTP port (press Enter to keep current): ")
+	ftpPort, _ := reader.ReadString('\n')
+	ftpPort = strings.TrimSpace(ftpPort)
+	if ftpPort != "" {
+		config.AppConfig.FTPPort = ":" + ftpPort
+		fmt.Printf("✅ FTP port updated to: %s\n", ftpPort)
+	}
+}
+
+func (c *CLI) saveConfiguration() {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Printf("\n┌──────────────────────────────────────────────────────────────┐\n")
+	fmt.Printf("│                  Save Configuration                           │\n")
+	fmt.Printf("├──────────────────────────────────────────────────────────────┤\n")
+
+	currentPath := config.GetConfigPath()
+	if currentPath == "defaults" {
+		currentPath = config.GetDefaultConfigPath()
+	}
+	fmt.Printf("│  Config Path: %-47s║\n", truncateString(currentPath, 47))
+	fmt.Printf("└──────────────────────────────────────────────────────────────┘\n")
+
+	fmt.Printf("\nSave to %s? (y/n): ", currentPath)
+	saveStr, _ := reader.ReadString('\n')
+	saveStr = strings.ToLower(strings.TrimSpace(saveStr))
+
+	if saveStr == "y" || saveStr == "yes" {
+		if err := config.SaveConfig(); err != nil {
+			fmt.Printf("❌ Failed to save configuration: %v\n", err)
+		} else {
+			fmt.Printf("✅ Configuration saved to: %s\n", currentPath)
+		}
+	}
+}
+
+func (c *CLI) showCurrentConfig() {
+	fmt.Printf("\n╔════════════════════════════════════════════════════════════════╗\n")
+	fmt.Printf("║                   CURRENT CONFIGURATION                        ║\n")
+	fmt.Printf("╠════════════════════════════════════════════════════════════════╣\n")
+	fmt.Printf("║                                                                ║\n")
+	fmt.Printf("║  🌐 Server Settings:                                           ║\n")
+	fmt.Printf("║     HTTP Port:      %-41s║\n", config.AppConfig.Port[1:])
+	fmt.Printf("║     FTP Port:       %-41s║\n", config.AppConfig.FTPPort[1:])
+	fmt.Printf("║     Root Directory: %-41s║\n", truncatePath(config.AppConfig.Root, 41))
+	fmt.Printf("║     Auto Select IP: %-41s║\n", boolToStr(config.AppConfig.AutoSelect))
+	fmt.Printf("║                                                                ║\n")
+	fmt.Printf("║  📁 FTP Server:                                                ║\n")
+	fmt.Printf("║     Enabled:        %-41s║\n", boolToStr(config.AppConfig.EnableFTP))
+	fmt.Printf("║     Username:       %-41s║\n", config.AppConfig.Username)
+	fmt.Printf("║     Password:       %-41s║\n", maskPassword(config.AppConfig.Password))
+	fmt.Printf("║                                                                ║\n")
+	fmt.Printf("║  🤖 MCP Server:                                                ║\n")
+	fmt.Printf("║     Enabled:        %-41s║\n", boolToStr(config.AppConfig.EnableMCP))
+	fmt.Printf("║                                                                ║\n")
+	fmt.Printf("║  🔐 HTTP Authentication:                                       ║\n")
+	fmt.Printf("║     Enabled:        %-41s║\n", boolToStr(config.AppConfig.HTTPAuth.Enabled))
+	if config.AppConfig.HTTPAuth.Enabled {
+		fmt.Printf("║     Username:       %-41s║\n", config.AppConfig.HTTPAuth.Username)
+		fmt.Printf("║     Password:       %-41s║\n", maskPassword(config.AppConfig.HTTPAuth.Password))
+	}
+	fmt.Printf("║                                                                ║\n")
+	fmt.Printf("║  📤 Upload Settings:                                           ║\n")
+	fmt.Printf("║     Enabled:        %-41s║\n", boolToStr(config.AppConfig.Upload.Enabled))
+	fmt.Printf("║     Max Size:       %-41s║\n", formatSize(config.AppConfig.Upload.MaxSize))
+	fmt.Printf("║                                                                ║\n")
+	fmt.Printf("║  📝 Logging:                                                   ║\n")
+	fmt.Printf("║     Level:          %-41s║\n", config.AppConfig.Logging.Level)
+	fmt.Printf("║     Format:         %-41s║\n", config.AppConfig.Logging.Format)
+	fmt.Printf("║                                                                ║\n")
+	fmt.Printf("║  💾 Config File: %-45s║\n", truncateString(config.GetConfigPath(), 45))
+	fmt.Printf("║                                                                ║\n")
+	fmt.Printf("╚════════════════════════════════════════════════════════════════╝\n")
+}
+
+func maskPassword(password string) string {
+	if len(password) == 0 {
+		return ""
+	}
+	if len(password) <= 2 {
+		return "****"
+	}
+	return password[:2] + strings.Repeat("*", len(password)-2)
 }
