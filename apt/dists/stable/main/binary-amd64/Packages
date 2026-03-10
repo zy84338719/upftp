@@ -5,10 +5,10 @@ Maintainer: Zhang Yi <zy84338719@gmail.com>
 Installed-Size: 9537
 Recommends: systemd
 Filename: pool/main/u/upftp/upftp_2.3.0_arm64.deb
-Size: 3845370
-MD5sum: 14d2bcc6850f5fe17e01a822d86e65e1
-SHA1: be3d448e88c3a722a55ac3fb43eec4bbf6768475
-SHA256: 7326b6b0348573e22150643544d48060263f8dee40c1ed02dca03a8777d3a1bb
+Size: 3845368
+MD5sum: 37233c9dbb60f67cddeb1d563464ee0f
+SHA1: 2d16e3ccae147fc1a43557469fb42bcc80926817
+SHA256: e0bfe49ba4024a86d4375641d926d9a887832763ea0e7e21e48e7bea1f02211f
 Section: net
 Priority: optional
 Homepage: https://github.com/zy84338719/upftp
