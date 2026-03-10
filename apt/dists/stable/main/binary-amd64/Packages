@@ -1,0 +1,16 @@
+Package: upftp
+Version: 1.4.0
+Architecture: arm64
+Maintainer: Zhang Yi <zy84338719@gmail.com>
+Installed-Size: 8449
+Recommends: systemd
+Filename: pool/main/u/upftp/upftp_1.4.0_arm64.deb
+Size: 3427624
+MD5sum: 55ef5b711e7c0cbb5cf2b79db3ea907d
+SHA1: 5f59439cbb9f6dca6b8b4b87f06226561972e61c
+SHA256: 55b1f089464fd15a0b25d9a55404553be2d15735cbf137d2971f3b7327e3a5cc
+Section: net
+Priority: optional
+Homepage: https://github.com/zy84338719/upftp
+Description: Modern cross-platform file sharing server with HTTP and FTP support
+
