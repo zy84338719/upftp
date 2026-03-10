@@ -3,6 +3,7 @@ package handlers
 import (
 	"archive/zip"
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -14,8 +15,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/skip2/go-qrcode"
 	"github.com/zy84338719/upftp/internal/config"
 	"github.com/zy84338719/upftp/internal/filehandler"
+	"github.com/zy84338719/upftp/internal/logger"
 )
 
 //go:embed templates/*
@@ -46,10 +49,33 @@ func GetServerInfo() *ServerInfo {
 func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/info", HandleServerInfo)
 	mux.HandleFunc("/api/tree", HandleDirectoryTree)
+	mux.HandleFunc("/api/upload", handleUpload)
+	mux.HandleFunc("/api/qrcode", handleQRCode)
+	mux.HandleFunc("/api/create-folder", handleCreateFolder)
+	mux.HandleFunc("/api/delete", handleDelete)
+	mux.HandleFunc("/api/rename", handleRename)
 	mux.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(config.AppConfig.Root))))
-	mux.HandleFunc("/", handleIndex)
-	mux.HandleFunc("/download/", handleDownload)
-	mux.HandleFunc("/preview/", handlePreview)
+	mux.HandleFunc("/", withAuth(handleIndex))
+	mux.HandleFunc("/download/", withAuth(handleDownload))
+	mux.HandleFunc("/preview/", withAuth(handlePreview))
+}
+
+func withAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !config.AppConfig.HTTPAuth.Enabled {
+			next(w, r)
+			return
+		}
+
+		user, pass, ok := r.BasicAuth()
+		if !ok || user != config.AppConfig.HTTPAuth.Username || pass != config.AppConfig.HTTPAuth.Password {
+			w.Header().Set("WWW-Authenticate", `Basic realm="UPFTP"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			logger.Warn("Unauthorized access attempt from %s", r.RemoteAddr)
+			return
+		}
+		next(w, r)
+	}
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -102,13 +128,15 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Files       []filehandler.FileInfo
-		ServerInfo  *ServerInfo
-		CurrentPath string
+		Files         []filehandler.FileInfo
+		ServerInfo    *ServerInfo
+		CurrentPath   string
+		UploadEnabled bool
 	}{
-		Files:       fileList,
-		ServerInfo:  serverInfo,
-		CurrentPath: urlPath,
+		Files:         fileList,
+		ServerInfo:    serverInfo,
+		CurrentPath:   urlPath,
+		UploadEnabled: config.AppConfig.Upload.Enabled,
 	}
 
 	tmpl, _ := template.ParseFS(templates, "templates/index.html")
@@ -132,6 +160,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	if !fileInfo.IsDir() {
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(filename)))
 		http.ServeFile(w, r, filePath)
+		logger.Info("Downloaded: %s", filename)
 		return
 	}
 
@@ -187,6 +216,7 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error creating zip file", http.StatusInternalServerError)
 		return
 	}
+	logger.Info("Downloaded directory as ZIP: %s", filename)
 }
 
 func handlePreview(w http.ResponseWriter, r *http.Request) {
@@ -205,26 +235,206 @@ func handlePreview(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filePath)
 }
 
+func handleUpload(w http.ResponseWriter, r *http.Request) {
+	if !config.AppConfig.Upload.Enabled {
+		http.Error(w, `{"error": "Upload disabled"}`, http.StatusForbidden)
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, config.AppConfig.Upload.MaxSize)
+
+	if err := r.ParseMultipartForm(config.AppConfig.Upload.MaxSize); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "File too large. Max: %d bytes"}`, config.AppConfig.Upload.MaxSize), http.StatusBadRequest)
+		return
+	}
+
+	uploadPath := r.FormValue("path")
+	if uploadPath == "" {
+		uploadPath = "/"
+	}
+
+	if !filehandler.IsPathSafe(uploadPath) && uploadPath != "/" {
+		http.Error(w, `{"error": "Invalid path"}`, http.StatusBadRequest)
+		return
+	}
+
+	targetDir := path.Join(config.AppConfig.Root, uploadPath)
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		http.Error(w, `{"error": "Cannot create directory"}`, http.StatusInternalServerError)
+		return
+	}
+
+	files := r.MultipartForm.File["files"]
+	if len(files) == 0 {
+		http.Error(w, `{"error": "No files uploaded"}`, http.StatusBadRequest)
+		return
+	}
+
+	var uploaded []string
+	for _, fileHeader := range files {
+		file, err := fileHeader.Open()
+		if err != nil {
+			continue
+		}
+
+		filePath := path.Join(targetDir, fileHeader.Filename)
+		dst, err := os.Create(filePath)
+		if err != nil {
+			file.Close()
+			continue
+		}
+
+		io.Copy(dst, file)
+		dst.Close()
+		file.Close()
+		uploaded = append(uploaded, fileHeader.Filename)
+		logger.Info("Uploaded: %s", path.Join(uploadPath, fileHeader.Filename))
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":  true,
+		"uploaded": uploaded,
+		"count":    len(uploaded),
+	})
+}
+
+func handleQRCode(w http.ResponseWriter, r *http.Request) {
+	url := fmt.Sprintf("http://%s:%d", serverInfo.IP, serverInfo.HTTPPort)
+
+	png, err := qrcode.Encode(url, qrcode.Medium, 256)
+	if err != nil {
+		http.Error(w, "Failed to generate QR code", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/png")
+	w.Write(png)
+}
+
+func handleCreateFolder(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Path string `json:"path"`
+		Name string `json:"name"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "Invalid request"}`, http.StatusBadRequest)
+		return
+	}
+
+	if !filehandler.IsPathSafe(req.Path) && req.Path != "/" {
+		http.Error(w, `{"error": "Invalid path"}`, http.StatusBadRequest)
+		return
+	}
+
+	folderPath := path.Join(config.AppConfig.Root, req.Path, req.Name)
+	if err := os.MkdirAll(folderPath, 0755); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("Created folder: %s", path.Join(req.Path, req.Name))
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
+func handleDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Path string `json:"path"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "Invalid request"}`, http.StatusBadRequest)
+		return
+	}
+
+	if !filehandler.IsPathSafe(req.Path) {
+		http.Error(w, `{"error": "Invalid path"}`, http.StatusBadRequest)
+		return
+	}
+
+	fullPath := path.Join(config.AppConfig.Root, req.Path)
+	if err := os.RemoveAll(fullPath); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("Deleted: %s", req.Path)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
+func handleRename(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Path    string `json:"path"`
+		NewName string `json:"newName"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error": "Invalid request"}`, http.StatusBadRequest)
+		return
+	}
+
+	if !filehandler.IsPathSafe(req.Path) {
+		http.Error(w, `{"error": "Invalid path"}`, http.StatusBadRequest)
+		return
+	}
+
+	oldPath := path.Join(config.AppConfig.Root, req.Path)
+	newPath := path.Join(path.Dir(oldPath), req.NewName)
+
+	if err := os.Rename(oldPath, newPath); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("Renamed: %s -> %s", req.Path, req.NewName)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
 func HandleServerInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	response := fmt.Sprintf(`{
-		"version": "%s",
-		"lastCommit": "%s",
-		"httpPort": %d,
-		"ftpPort": %d,
-		"ftpEnabled": %t,
-		"rootPath": "%s"
-	}`,
-		config.AppConfig.Version,
-		config.AppConfig.LastCommit,
-		serverInfo.HTTPPort,
-		serverInfo.FTPPort,
-		config.AppConfig.EnableFTP,
-		config.AppConfig.Root,
-	)
+	qrCodeBase64 := ""
+	if png, err := qrcode.Encode(fmt.Sprintf("http://%s:%d", serverInfo.IP, serverInfo.HTTPPort), qrcode.Medium, 256); err == nil {
+		qrCodeBase64 = base64.StdEncoding.EncodeToString(png)
+	}
 
-	w.Write([]byte(response))
+	response := map[string]interface{}{
+		"version":         config.AppConfig.Version,
+		"lastCommit":      config.AppConfig.LastCommit,
+		"httpPort":        serverInfo.HTTPPort,
+		"ftpPort":         serverInfo.FTPPort,
+		"ftpEnabled":      config.AppConfig.EnableFTP,
+		"rootPath":        config.AppConfig.Root,
+		"uploadEnabled":   config.AppConfig.Upload.Enabled,
+		"httpAuthEnabled": config.AppConfig.HTTPAuth.Enabled,
+		"qrCode":          qrCodeBase64,
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
 
 func getFileIcon(isDir bool, fileType filehandler.FileType) string {
