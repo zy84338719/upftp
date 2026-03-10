@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"github.com/zy84338719/upftp/internal/cli"
@@ -15,12 +16,17 @@ import (
 )
 
 var (
-	Version    = "undefined"
-	LastCommit = "undefined"
+	Version     = "undefined"
+	LastCommit  = "undefined"
+	BuildDate   = "undefined"
+	GoVersion   = runtime.Version()
+	Platform    = runtime.GOOS + "/" + runtime.GOARCH
+	ProjectURL  = "https://github.com/zy84338719/upftp"
+	ProjectName = "UPFTP"
 )
 
 func main() {
-	config.Init(Version, LastCommit)
+	config.Init(Version, LastCommit, BuildDate, GoVersion, Platform, ProjectURL, ProjectName)
 	logger.Init(config.AppConfig.Logging.Level, config.AppConfig.Logging.Format)
 
 	if config.AppConfig.EnableMCP {
