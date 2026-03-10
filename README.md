@@ -229,6 +229,18 @@ upftp 支持 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)，
 | `download_file` | 获取文件的下载链接和 Base64 编码内容 |
 | `search_files` | 搜索匹配模式的文件 |
 | `get_directory_tree` | 获取目录树结构 |
+| `start_server` | 启动 HTTP/FTP 服务器供局域网文件共享 |
+| `stop_server` | 停止 HTTP/FTP 服务器 |
+| `get_server_status` | 获取服务器状态和访问 URL |
+| `set_share_directory` | 更改共享目录 |
+
+#### 使用场景
+
+AI 助手可以：
+1. 通过 `start_server` 快速启动一个局域网文件服务器
+2. 返回访问 URL 给用户，供其他用户下载文件
+3. 通过 `stop_server` 随时停止服务
+4. 通过 `set_share_directory` 动态切换共享目录
 
 #### 在 Claude Desktop 中配置
 
@@ -611,6 +623,18 @@ upftp supports [Model Context Protocol (MCP)](https://modelcontextprotocol.io/),
 | `download_file` | Get download URL and base64 encoded content for a file |
 | `search_files` | Search for files matching a pattern |
 | `get_directory_tree` | Get the directory tree structure |
+| `start_server` | Start HTTP/FTP server for LAN file sharing |
+| `stop_server` | Stop HTTP/FTP servers |
+| `get_server_status` | Get current server status and access URLs |
+| `set_share_directory` | Change the shared directory |
+
+#### 使用场景
+
+AI 助手可以：
+1. 通过 `start_server` 快速启动一个局域网文件服务器
+2. 返回访问 URL 给用户，供其他用户下载文件
+3. 通过 `stop_server` 随时停止服务
+4. 通过 `set_share_directory` 动态切换共享目录
 
 #### Configure in Claude Desktop
 

@@ -5,31 +5,56 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	mcpserver "github.com/mark3labs/mcp-go/server"
 	"github.com/zy84338719/upftp/internal/config"
 	"github.com/zy84338719/upftp/internal/filehandler"
+	"github.com/zy84338719/upftp/internal/server"
 )
 
+type ServerStatus struct {
+	HTTPRunning bool
+	HTTPPort    int
+	FTPRunning  bool
+	FTPPort     int
+	Root        string
+	IP          string
+}
+
 type MCPServer struct {
-	server *server.MCPServer
-	root   string
+	server     *mcpserver.MCPServer
+	root       string
+	httpServer *server.HTTPServer
+	ftpServer  *server.FTPServer
+	httpCancel context.CancelFunc
+	ftpCancel  context.CancelFunc
+	httpPort   int
+	ftpPort    int
+	mu         sync.Mutex
+	ctx        context.Context
 }
 
 func NewMCPServer() *MCPServer {
-	s := server.NewMCPServer(
+	s := mcpserver.NewMCPServer(
 		"upftp",
 		config.AppConfig.Version,
-		server.WithToolCapabilities(true),
+		mcpserver.WithToolCapabilities(true),
 	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	_ = cancel
 
 	mcpServer := &MCPServer{
 		server: s,
 		root:   config.AppConfig.Root,
+		ctx:    ctx,
 	}
 
 	mcpServer.registerTools()
@@ -85,6 +110,216 @@ func (s *MCPServer) registerTools() {
 			mcp.Description("Root path for the tree (default: /)"),
 		),
 	), s.handleGetDirectoryTree)
+
+	s.server.AddTool(mcp.NewTool("start_server",
+		mcp.WithDescription("Start HTTP/FTP server for LAN file sharing. Returns access URL."),
+		mcp.WithNumber("http_port",
+			mcp.Description("HTTP server port (default: 10000)"),
+		),
+		mcp.WithNumber("ftp_port",
+			mcp.Description("FTP server port (default: 2121)"),
+		),
+		mcp.WithBoolean("enable_ftp",
+			mcp.Description("Enable FTP server (default: false)"),
+		),
+		mcp.WithString("directory",
+			mcp.Description("Directory to share (default: current shared directory)"),
+		),
+	), s.handleStartServer)
+
+	s.server.AddTool(mcp.NewTool("stop_server",
+		mcp.WithDescription("Stop HTTP/FTP servers"),
+		mcp.WithBoolean("stop_http",
+			mcp.Description("Stop HTTP server (default: true)"),
+		),
+		mcp.WithBoolean("stop_ftp",
+			mcp.Description("Stop FTP server (default: true)"),
+		),
+	), s.handleStopServer)
+
+	s.server.AddTool(mcp.NewTool("get_server_status",
+		mcp.WithDescription("Get current server status including running state, ports, and access URLs"),
+	), s.handleGetServerStatus)
+
+	s.server.AddTool(mcp.NewTool("set_share_directory",
+		mcp.WithDescription("Change the shared directory"),
+		mcp.WithString("path",
+			mcp.Description("Absolute or relative path to the directory to share"),
+			mcp.Required(),
+		),
+	), s.handleSetShareDirectory)
+}
+
+func (s *MCPServer) handleStartServer(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	httpPort := request.GetInt("http_port", 10000)
+	ftpPort := request.GetInt("ftp_port", 2121)
+	enableFTP := request.GetBool("enable_ftp", false)
+	newDir := request.GetString("directory", "")
+
+	if newDir != "" {
+		absPath, err := filepath.Abs(newDir)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Invalid directory path: %v", err)), nil
+		}
+		if _, err := os.Stat(absPath); os.IsNotExist(err) {
+			return mcp.NewToolResultError(fmt.Sprintf("Directory does not exist: %s", absPath)), nil
+		}
+		s.root = absPath
+		config.AppConfig.Root = absPath
+	}
+
+	ip, err := s.getLANIP()
+	if err != nil {
+		ip = "127.0.0.1"
+	}
+
+	var results []string
+
+	if s.httpServer == nil {
+		s.httpServer = server.NewHTTPServer()
+		s.httpPort = httpPort
+		config.AppConfig.Port = ":" + strconv.Itoa(httpPort)
+
+		ctx, cancel := context.WithCancel(s.ctx)
+		s.httpCancel = cancel
+
+		go func() {
+			s.httpServer.Start(ctx, ip, httpPort, ftpPort, s.root)
+		}()
+
+		results = append(results, fmt.Sprintf("HTTP Server started: http://%s:%d", ip, httpPort))
+	} else {
+		results = append(results, fmt.Sprintf("HTTP Server already running on port %d", s.httpPort))
+	}
+
+	if enableFTP {
+		if s.ftpServer == nil {
+			s.ftpServer = server.NewFTPServer()
+			s.ftpPort = ftpPort
+
+			ctx, cancel := context.WithCancel(s.ctx)
+			s.ftpCancel = cancel
+
+			go func() {
+				s.ftpServer.Start(ctx, ip, ftpPort, s.root, config.AppConfig.Username, config.AppConfig.Password)
+			}()
+
+			results = append(results, fmt.Sprintf("FTP Server started: ftp://%s:%d (user: %s, pass: %s)",
+				ip, ftpPort, config.AppConfig.Username, config.AppConfig.Password))
+		} else {
+			results = append(results, fmt.Sprintf("FTP Server already running on port %d", s.ftpPort))
+		}
+	}
+
+	results = append(results, fmt.Sprintf("Shared directory: %s", s.root))
+
+	return mcp.NewToolResultText(strings.Join(results, "\n")), nil
+}
+
+func (s *MCPServer) handleStopServer(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	stopHTTP := request.GetBool("stop_http", true)
+	stopFTP := request.GetBool("stop_ftp", true)
+
+	var results []string
+
+	if stopHTTP && s.httpCancel != nil {
+		s.httpCancel()
+		s.httpServer = nil
+		s.httpCancel = nil
+		results = append(results, "HTTP Server stopped")
+	}
+
+	if stopFTP && s.ftpCancel != nil {
+		s.ftpCancel()
+		s.ftpServer = nil
+		s.ftpCancel = nil
+		results = append(results, "FTP Server stopped")
+	}
+
+	if len(results) == 0 {
+		results = append(results, "No servers to stop")
+	}
+
+	return mcp.NewToolResultText(strings.Join(results, "\n")), nil
+}
+
+func (s *MCPServer) handleGetServerStatus(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ip, err := s.getLANIP()
+	if err != nil {
+		ip = "127.0.0.1"
+	}
+
+	var results []string
+	results = append(results, "=== UPFTP Server Status ===")
+	results = append(results, fmt.Sprintf("Shared Directory: %s", s.root))
+	results = append(results, fmt.Sprintf("LAN IP: %s", ip))
+	results = append(results, "")
+
+	if s.httpServer != nil {
+		results = append(results, fmt.Sprintf("HTTP Server: RUNNING on port %d", s.httpPort))
+		results = append(results, fmt.Sprintf("  Access URL: http://%s:%d", ip, s.httpPort))
+	} else {
+		results = append(results, "HTTP Server: STOPPED")
+	}
+
+	if s.ftpServer != nil {
+		results = append(results, fmt.Sprintf("FTP Server: RUNNING on port %d", s.ftpPort))
+		results = append(results, fmt.Sprintf("  Access URL: ftp://%s:%d", ip, s.ftpPort))
+		results = append(results, fmt.Sprintf("  Credentials: %s / %s", config.AppConfig.Username, config.AppConfig.Password))
+	} else {
+		results = append(results, "FTP Server: STOPPED")
+	}
+
+	return mcp.NewToolResultText(strings.Join(results, "\n")), nil
+}
+
+func (s *MCPServer) handleSetShareDirectory(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	newPath, err := request.RequireString("path")
+	if err != nil || newPath == "" {
+		return mcp.NewToolResultError("Path parameter is required"), nil
+	}
+
+	absPath, err := filepath.Abs(newPath)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("Invalid path: %v", err)), nil
+	}
+
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		return mcp.NewToolResultError(fmt.Sprintf("Directory does not exist: %s", absPath)), nil
+	}
+
+	s.mu.Lock()
+	s.root = absPath
+	config.AppConfig.Root = absPath
+	s.mu.Unlock()
+
+	return mcp.NewToolResultText(fmt.Sprintf("Shared directory changed to: %s\nNote: Restart servers for the change to take effect on running servers.", absPath)), nil
+}
+
+func (s *MCPServer) getLANIP() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "", err
+	}
+
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String(), nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("no LAN IP found")
 }
 
 func (s *MCPServer) handleListFiles(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -368,9 +603,10 @@ func (s *MCPServer) isPathSafe(relativePath string) bool {
 }
 
 func (s *MCPServer) Start(ctx context.Context) error {
-	return server.ServeStdio(s.server)
+	s.ctx = ctx
+	return mcpserver.ServeStdio(s.server)
 }
 
-func (s *MCPServer) GetServer() *server.MCPServer {
+func (s *MCPServer) GetServer() *mcpserver.MCPServer {
 	return s.server
 }
