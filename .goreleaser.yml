@@ -106,7 +106,6 @@ scoops:
     homepage: https://github.com/zy84338719/upftp
     description: Modern cross-platform file sharing server
     license: MIT
-    short_description: File sharing server
     persist:
       - data
 
