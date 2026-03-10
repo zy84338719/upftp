@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-type NetworkInfo struct {
+type Info struct {
 	IP   string
 	Port int
 }
@@ -56,7 +56,7 @@ func SelectIP(ips []string, autoSelect bool) string {
 	}
 }
 
-func GetNetworkInfo(autoSelect bool, httpPort, ftpPort int) (string, error) {
+func GetInfo(autoSelect bool, httpPort, ftpPort int) (string, error) {
 	ips := GetAvailableIPs()
 	if len(ips) == 0 {
 		return "", fmt.Errorf("no available network interfaces found")

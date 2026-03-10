@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/zy84338719/upftp/config"
-	"github.com/zy84338719/upftp/ftp"
-	"github.com/zy84338719/upftp/logic"
-	"github.com/zy84338719/upftp/network"
+	"github.com/zy84338719/upftp/internal/cli"
+	"github.com/zy84338719/upftp/internal/config"
+	"github.com/zy84338719/upftp/internal/network"
+	"github.com/zy84338719/upftp/internal/server"
 )
 
 var (
@@ -19,11 +19,9 @@ var (
 )
 
 func main() {
-	// 初始化配置
 	config.Init(Version, LastCommit)
 
-	// 获取网络信息
-	selectedIP, err := network.GetNetworkInfo(
+	selectedIP, err := network.GetInfo(
 		config.AppConfig.AutoSelect,
 		config.AppConfig.GetHTTPPort(),
 		config.AppConfig.GetFTPPort(),
@@ -32,50 +30,38 @@ func main() {
 		log.Fatal("Failed to get network information:", err)
 	}
 
-	// 设置服务器信息
-	logic.SetServerInfo(
-		selectedIP,
-		config.AppConfig.GetHTTPPort(),
-		config.AppConfig.GetFTPPort(),
-		config.AppConfig.Root,
-	)
-	logic.SetServerIP(selectedIP)
+	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	// 创建上下文
-	ctx := context.Background()
-	ctx, cancelFunc := context.WithCancel(ctx)
-
-	// 启动HTTP服务器
+	httpServer := server.NewHTTPServer()
 	go func() {
-		if err := logic.StartHTTPServer(ctx); err != nil {
+		if err := httpServer.Start(ctx, selectedIP,
+			config.AppConfig.GetHTTPPort(),
+			config.AppConfig.GetFTPPort(),
+			config.AppConfig.Root); err != nil {
 			log.Printf("HTTP server error: %v", err)
 		}
 	}()
 
-	// 启动FTP服务器（如果启用）
 	if config.AppConfig.EnableFTP {
+		ftpServer := server.NewFTPServer()
 		go func() {
-			if err := ftp.StartFTPServer(
-				ctx,
-				selectedIP,
+			if err := ftpServer.Start(ctx, selectedIP,
 				config.AppConfig.GetFTPPort(),
 				config.AppConfig.Root,
 				config.AppConfig.Username,
-				config.AppConfig.Password,
-			); err != nil {
+				config.AppConfig.Password); err != nil {
 				log.Printf("FTP server error: %v", err)
 			}
 		}()
 	}
 
-	// 设置信号处理
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 
-	// 启动命令行界面
-	go logic.StartCommandInterface(ctx, sigChan)
+	cliApp := cli.NewCLI()
+	cliApp.SetServerIP(selectedIP)
+	go cliApp.Start(ctx, sigChan)
 
-	// 等待退出信号
 	for {
 		s := <-sigChan
 		log.Printf("Received signal: %s", s.String())
@@ -86,7 +72,6 @@ func main() {
 			return
 		case syscall.SIGHUP:
 			log.Println("Received SIGHUP, reloading configuration...")
-			// 这里可以添加重新加载配置的逻辑
 		}
 	}
 }

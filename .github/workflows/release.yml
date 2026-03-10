@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
@@ -13,11 +18,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.21
+          go-version: '1.21'
+          cache: true
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
@@ -27,37 +36,91 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+          SCOP_GITHUB_TOKEN: ${{ secrets.SCOP_GITHUB_TOKEN }}
 
-  publish-packages:
+  publish-apt:
     needs: goreleaser
     runs-on: ubuntu-latest
-    if: success()
+    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts/
-          
-      - name: Setup APT repository
+
+      - name: Get version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # This would typically sync to your private APT repository
-          # For now, we'll just show the structure
-          echo "Setting up APT repository structure..."
-          mkdir -p apt-repo/{pool/main,dists/stable/main}
-          find artifacts/ -name "*.deb" -exec cp {} apt-repo/pool/main/ \; || true
-          ls -la apt-repo/pool/main/ || true
-          
-      - name: Upload to private repository
+          gh release download ${{ github.ref_name }} \
+            --pattern "*.deb" \
+            --dir ./deb-packages/
+
+      - name: Set up APT repository
         run: |
-          echo "In a real scenario, this would:"
-          echo "1. Upload .deb packages to your private APT repository"
-          echo "2. Update Homebrew tap repository"
-          echo "3. Notify package management systems"
-          echo ""
-          echo "Files that would be uploaded:"
-          find artifacts/ -name "*.deb" -o -name "*.rpm" || true
+          mkdir -p apt-repo/{pool/main/u/upftp,dists/stable/main/binary-amd64,dists/stable/main/binary-arm64}
+          cp ./deb-packages/*.deb apt-repo/pool/main/u/upftp/
+          
+          # Generate Packages file
+          cd apt-repo
+          dpkg-scanpackages pool/main /dev/null > dists/stable/main/binary-amd64/Packages
+          gzip -k dists/stable/main/binary-amd64/Packages
+          
+          # Generate Release file
+          cat > dists/stable/Release << EOF
+          Origin: UPFTP
+          Label: UPFTP APT Repository
+          Suite: stable
+          Codename: stable
+          Architectures: amd64 arm64
+          Components: main
+          Description: UPFTP File Sharing Server
+          Date: $(date -R)
+          EOF
+          
+          # Generate InRelease (signing would require GPG key)
+          cd dists/stable
+          cat Release > InRelease
+
+      - name: Upload APT repository to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./apt-repo
+          destination_dir: apt
+          keep_files: true
+
+  announce:
+    needs: [goreleaser, publish-apt]
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Get version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Create announcement
+        run: |
+          echo "## 🎉 UPFTP v${VERSION} Released!" > announcement.md
+          echo "" >> announcement.md
+          echo "### Installation" >> announcement.md
+          echo "" >> announcement.md
+          echo "**macOS (Homebrew):**" >> announcement.md
+          echo "\`\`\`bash" >> announcement.md
+          echo "brew tap zy84338719/tap" >> announcement.md
+          echo "brew install upftp" >> announcement.md
+          echo "\`\`\`" >> announcement.md
+          echo "" >> announcement.md
+          echo "**Ubuntu/Debian:**" >> announcement.md
+          echo "\`\`\`bash" >> announcement.md
+          echo "# Add APT repository" >> announcement.md
+          echo "curl -fsSL https://zy84338719.github.io/upftp/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/upftp.gpg" >> announcement.md
+          echo "echo 'deb [signed-by=/etc/apt/trusted.gpg.d/upftp.gpg] https://zy84338719.github.io/upftp/apt stable main' | sudo tee /etc/apt/sources.list.d/upftp.list" >> announcement.md
+          echo "sudo apt update && sudo apt install upftp" >> announcement.md
+          echo "\`\`\`" >> announcement.md
+          echo "" >> announcement.md
+          echo "See full release notes: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}" >> announcement.md
+
+      - name: Display announcement
+        run: cat announcement.md
