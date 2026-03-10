@@ -1,0 +1,31 @@
+# UPFTP Configuration File
+# https://github.com/zy84338719/upftp
+
+# Server settings
+port: "10000"
+ftp_port: "2121"
+root: "./"
+auto_select: false
+enable_ftp: false
+enable_mcp: false
+
+# FTP credentials
+username: "admin"
+password: "admin"
+
+# HTTP Basic Authentication
+http_auth:
+  enabled: false
+  username: "admin"
+  password: "admin123"
+
+# Logging settings
+logging:
+  level: "info"      # debug, info, warn, error
+  format: "text"     # text, json
+
+# Upload settings
+upload:
+  enabled: true
+  max_size: 104857600  # 100MB in bytes
+  allow_types: ""      # empty = all types, or ".jpg,.png,.pdf"

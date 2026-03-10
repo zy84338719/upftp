@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/zy84338719/upftp/internal/cli"
 	"github.com/zy84338719/upftp/internal/config"
+	"github.com/zy84338719/upftp/internal/logger"
 	"github.com/zy84338719/upftp/internal/mcp"
 	"github.com/zy84338719/upftp/internal/network"
 	"github.com/zy84338719/upftp/internal/server"
@@ -21,11 +21,12 @@ var (
 
 func main() {
 	config.Init(Version, LastCommit)
+	logger.Init(config.AppConfig.Logging.Level, config.AppConfig.Logging.Format)
 
 	if config.AppConfig.EnableMCP {
 		mcpServer := mcp.NewMCPServer()
 		if err := mcpServer.Start(context.Background()); err != nil {
-			log.Fatal("MCP server error:", err)
+			logger.Fatal("MCP server error: %v", err)
 		}
 		return
 	}
@@ -36,8 +37,11 @@ func main() {
 		config.AppConfig.GetFTPPort(),
 	)
 	if err != nil {
-		log.Fatal("Failed to get network information:", err)
+		logger.Fatal("Failed to get network information: %v", err)
 	}
+
+	logger.Info("UPFTP %s starting...", config.AppConfig.Version)
+	logger.Info("Shared directory: %s", config.AppConfig.Root)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
@@ -47,7 +51,7 @@ func main() {
 			config.AppConfig.GetHTTPPort(),
 			config.AppConfig.GetFTPPort(),
 			config.AppConfig.Root); err != nil {
-			log.Printf("HTTP server error: %v", err)
+			logger.Error("HTTP server error: %v", err)
 		}
 	}()
 
@@ -59,7 +63,7 @@ func main() {
 				config.AppConfig.Root,
 				config.AppConfig.Username,
 				config.AppConfig.Password); err != nil {
-				log.Printf("FTP server error: %v", err)
+				logger.Error("FTP server error: %v", err)
 			}
 		}()
 	}
@@ -73,14 +77,14 @@ func main() {
 
 	for {
 		s := <-sigChan
-		log.Printf("Received signal: %s", s.String())
+		logger.Info("Received signal: %s", s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
 			cancelFunc()
-			log.Println("UPFTP server shutdown complete.")
+			logger.Info("UPFTP server shutdown complete.")
 			return
 		case syscall.SIGHUP:
-			log.Println("Received SIGHUP, reloading configuration...")
+			logger.Info("Received SIGHUP, reloading configuration...")
 		}
 	}
 }
