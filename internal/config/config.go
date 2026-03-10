@@ -19,8 +19,14 @@ type Config struct {
 	EnableMCP  bool   `yaml:"enable_mcp"`
 	Username   string `yaml:"username"`
 	Password   string `yaml:"password"`
-	Version    string `yaml:"-"`
-	LastCommit string `yaml:"-"`
+
+	Version     string `yaml:"-"`
+	LastCommit  string `yaml:"-"`
+	BuildDate   string `yaml:"-"`
+	GoVersion   string `yaml:"-"`
+	Platform    string `yaml:"-"`
+	ProjectURL  string `yaml:"-"`
+	ProjectName string `yaml:"-"`
 
 	HTTPAuth struct {
 		Enabled  bool   `yaml:"enabled"`
@@ -63,15 +69,20 @@ func GetConfigPath() string {
 	return "defaults"
 }
 
-func Init(version, lastCommit string) {
+func Init(version, lastCommit, buildDate, goVersion, platform, projectURL, projectName string) {
 	AppConfig = &Config{
-		Version:    version,
-		LastCommit: lastCommit,
-		Port:       ":10000",
-		FTPPort:    ":2121",
-		Root:       "./",
-		Username:   "admin",
-		Password:   "admin",
+		Version:     version,
+		LastCommit:  lastCommit,
+		BuildDate:   buildDate,
+		GoVersion:   goVersion,
+		Platform:    platform,
+		ProjectURL:  projectURL,
+		ProjectName: projectName,
+		Port:        ":10000",
+		FTPPort:     ":2121",
+		Root:        "./",
+		Username:    "admin",
+		Password:    "admin",
 	}
 
 	loadConfigFile()
@@ -246,4 +257,41 @@ upload:
   max_size: 104857600  # 100MB in bytes
   allow_types: ""      # empty = all types, or ".jpg,.png,.pdf"
 `
+}
+
+func SaveConfig() error {
+	return SaveConfigToPath(currentConfigPath)
+}
+
+func SaveConfigToPath(path string) error {
+	if path == "" {
+		path = "./upftp.yaml"
+	}
+
+	data, err := yaml.Marshal(AppConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	header := `# UPFTP Configuration File
+# https://github.com/zy84338719/upftp
+
+`
+
+	content := header + string(data)
+
+	expandedPath := expandPath(path)
+	if err := os.WriteFile(expandedPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	if currentConfigPath == "" {
+		currentConfigPath = expandedPath
+	}
+
+	return nil
+}
+
+func GetDefaultConfigPath() string {
+	return "./upftp.yaml"
 }

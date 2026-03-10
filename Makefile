@@ -11,7 +11,8 @@ GOMOD = $(GOCMD) mod
 
 LDFLAGS = -s -w \
 	-X "main.Version=$(VERSION)" \
-	-X "main.LastCommit=$(COMMIT_SHA)"
+	-X "main.LastCommit=$(COMMIT_SHA)" \
+	-X "main.BuildDate=$(BUILD_DATE)"
 
 BUILD_FLAGS = -a -ldflags "$(LDFLAGS)"
 

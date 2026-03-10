@@ -132,11 +132,25 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		ServerInfo    *ServerInfo
 		CurrentPath   string
 		UploadEnabled bool
+		Version       string
+		BuildDate     string
+		GoVersion     string
+		Platform      string
+		ProjectURL    string
+		ProjectName   string
+		LastCommit    string
 	}{
 		Files:         fileList,
 		ServerInfo:    serverInfo,
 		CurrentPath:   urlPath,
 		UploadEnabled: config.AppConfig.Upload.Enabled,
+		Version:       config.AppConfig.Version,
+		BuildDate:     config.AppConfig.BuildDate,
+		GoVersion:     config.AppConfig.GoVersion,
+		Platform:      config.AppConfig.Platform,
+		ProjectURL:    config.AppConfig.ProjectURL,
+		ProjectName:   config.AppConfig.ProjectName,
+		LastCommit:    config.AppConfig.LastCommit,
 	}
 
 	tmpl, _ := template.ParseFS(templates, "templates/index.html")
