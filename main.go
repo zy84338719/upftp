@@ -40,8 +40,19 @@ func main() {
 		logger.Fatal("Failed to get network information: %v", err)
 	}
 
-	logger.Info("UPFTP %s starting...", config.AppConfig.Version)
+	logger.Info("Starting UPFTP v%s", config.AppConfig.Version)
+	logger.Info("Configuration loaded from: %s", config.GetConfigPath())
 	logger.Info("Shared directory: %s", config.AppConfig.Root)
+	logger.Info("HTTP server: http://%s:%d", selectedIP, config.AppConfig.GetHTTPPort())
+	if config.AppConfig.EnableFTP {
+		logger.Info("FTP server: ftp://%s:%d", selectedIP, config.AppConfig.GetFTPPort())
+	}
+	if config.AppConfig.HTTPAuth.Enabled {
+		logger.Info("HTTP authentication: enabled (user: %s)", config.AppConfig.HTTPAuth.Username)
+	}
+	if config.AppConfig.Upload.Enabled {
+		logger.Info("File upload: enabled (max size: %d MB)", config.AppConfig.Upload.MaxSize/1024/1024)
+	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 

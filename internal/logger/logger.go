@@ -80,7 +80,23 @@ func (l *Logger) log(level Level, format string, args ...interface{}) {
 	} else {
 		color := levelColors[level]
 		reset := "\033[0m"
-		log.Printf("%s[%s]%s [%s] %s", color, levelNames[level], reset, now, msg)
+		bold := "\033[1m"
+
+		levelDisplay := levelNames[level]
+		if level == ERROR {
+			levelDisplay = "ERROR"
+		} else if level == WARN {
+			levelDisplay = "WARN "
+		} else if level == INFO {
+			levelDisplay = "INFO "
+		} else {
+			levelDisplay = "DEBUG"
+		}
+
+		fmt.Printf("%s%s[%s]%s %s | %s%s %s\n",
+			bold, color, levelDisplay, reset,
+			now,
+			color, "●", msg)
 	}
 }
 

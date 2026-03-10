@@ -47,12 +47,20 @@ type Config struct {
 }
 
 var AppConfig *Config
+var currentConfigPath string
 
 var configPaths = []string{
 	"./upftp.yaml",
 	"./upftp.yml",
 	"~/.upftp/config.yaml",
 	"/etc/upftp/config.yaml",
+}
+
+func GetConfigPath() string {
+	if currentConfigPath != "" {
+		return currentConfigPath
+	}
+	return "defaults"
 }
 
 func Init(version, lastCommit string) {
@@ -99,6 +107,7 @@ func Init(version, lastCommit string) {
 	flag.Parse()
 
 	if *configFile != "" {
+		currentConfigPath = *configFile
 		loadConfigFromFile(*configFile)
 	}
 
@@ -143,6 +152,7 @@ func loadConfigFile() {
 	for _, path := range configPaths {
 		expandedPath := expandPath(path)
 		if _, err := os.Stat(expandedPath); err == nil {
+			currentConfigPath = expandedPath
 			loadConfigFromFile(expandedPath)
 			return
 		}
