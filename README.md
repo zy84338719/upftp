@@ -79,6 +79,7 @@
 ### 🚀 双协议支持
 - **HTTP服务器**: 现代Web界面，支持浏览器访问
 - **FTP服务器**: 传统FTP协议，支持各种FTP客户端
+- **MCP服务器**: Model Context Protocol，支持AI集成
 - 独立端口配置，可单独启用
 
 ### 🔧 便捷的管理
@@ -176,6 +177,9 @@ chmod +x upftp_darwin_arm64
 # 启用FTP服务器
 ./upftp -enable-ftp -user admin -pass mypassword
 
+# 启用MCP服务器 (AI集成)
+./upftp -enable-mcp
+
 # 自动选择网络接口（适合脚本使用）
 ./upftp -auto
 ```
@@ -191,6 +195,7 @@ upftp [选项]
     -d <dir>        共享目录 (默认: 当前目录)
     -auto           自动选择第一个可用网络接口
     -enable-ftp     启用FTP服务器
+    -enable-mcp     启用MCP服务器 (AI集成)
     -user <name>    FTP用户名 (默认: admin)
     -pass <pass>    FTP密码 (默认: admin)
     -h              显示帮助信息
@@ -203,6 +208,45 @@ upftp [选项]
 1. **Web浏览器**: `http://你的IP:端口`
 2. **FTP客户端**: `ftp://你的IP:FTP端口`  
 3. **命令行下载**: `curl -O http://你的IP:端口/download/文件名`
+
+### MCP 集成
+
+upftp 支持 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)，可以让 AI 助手（如 Claude）直接访问和操作共享目录中的文件。
+
+#### 启用 MCP
+
+```bash
+./upftp -enable-mcp -d /path/to/share
+```
+
+#### MCP 工具列表
+
+| 工具名称 | 描述 |
+|---------|------|
+| `list_files` | 列出指定路径下的文件和目录 |
+| `get_file_info` | 获取文件或目录的详细信息 |
+| `read_file` | 读取文本文件内容 |
+| `download_file` | 获取文件的下载链接和 Base64 编码内容 |
+| `search_files` | 搜索匹配模式的文件 |
+| `get_directory_tree` | 获取目录树结构 |
+
+#### 在 Claude Desktop 中配置
+
+在 Claude Desktop 配置文件中添加：
+
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "upftp": {
+      "command": "/path/to/upftp",
+      "args": ["-enable-mcp", "-d", "/path/to/share"]
+    }
+  }
+}
+```
 
 ## 🛠️ 从源码构建
 
@@ -417,6 +461,7 @@ make fmt
 ### 🚀 Dual Protocol Support  
 - **HTTP Server**: Modern web interface for browser access
 - **FTP Server**: Traditional FTP protocol for FTP clients
+- **MCP Server**: Model Context Protocol for AI integration
 - Independent port configuration, can be enabled separately
 
 ### 🔧 Convenient Management
@@ -514,6 +559,9 @@ chmod +x upftp_darwin_arm64
 # Enable FTP server
 ./upftp -enable-ftp -user admin -pass mypassword
 
+# Enable MCP server (AI integration)
+./upftp -enable-mcp
+
 # Auto-select network interface (suitable for scripts)
 ./upftp -auto
 ```
@@ -529,6 +577,7 @@ Options:
     -d <dir>        Share directory (default: current directory)
     -auto           Automatically select first available network interface
     -enable-ftp     Enable FTP server
+    -enable-mcp     Enable MCP server for AI integration
     -user <name>    FTP username (default: admin)
     -pass <pass>    FTP password (default: admin)
     -h              Show help message
@@ -541,6 +590,45 @@ After startup, you can access via:
 1. **Web Browser**: `http://your-ip:port`
 2. **FTP Client**: `ftp://your-ip:ftp-port`
 3. **Command Line**: `curl -O http://your-ip:port/download/filename`
+
+### MCP Integration
+
+upftp supports [Model Context Protocol (MCP)](https://modelcontextprotocol.io/), enabling AI assistants (like Claude) to directly access and manage files in the shared directory.
+
+#### Enable MCP
+
+```bash
+./upftp -enable-mcp -d /path/to/share
+```
+
+#### Available MCP Tools
+
+| Tool Name | Description |
+|-----------|-------------|
+| `list_files` | List files and directories in a specified path |
+| `get_file_info` | Get detailed information about a file or directory |
+| `read_file` | Read the content of a text file |
+| `download_file` | Get download URL and base64 encoded content for a file |
+| `search_files` | Search for files matching a pattern |
+| `get_directory_tree` | Get the directory tree structure |
+
+#### Configure in Claude Desktop
+
+Add to your Claude Desktop config file:
+
+**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "upftp": {
+      "command": "/path/to/upftp",
+      "args": ["-enable-mcp", "-d", "/path/to/share"]
+    }
+  }
+}
+```
 
 ## 🛠️ Build from Source
 

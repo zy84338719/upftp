@@ -17,6 +17,7 @@ type Config struct {
 	Password   string
 	Version    string
 	LastCommit string
+	EnableMCP  bool
 }
 
 var AppConfig *Config
@@ -28,7 +29,7 @@ func Init(version, lastCommit string) {
 	}
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "upftp - A lightweight file sharing server with FTP support\n\n")
+		fmt.Fprintf(os.Stderr, "upftp - A lightweight file sharing server with FTP and MCP support\n\n")
 		fmt.Fprintf(os.Stderr, "Project: https://github.com/zy84338719/upftp\n\n")
 		fmt.Fprintf(os.Stderr, "Usage:\n")
 		fmt.Fprintf(os.Stderr, "  upftp [options]\n\n")
@@ -38,6 +39,7 @@ func Init(version, lastCommit string) {
 		fmt.Fprintf(os.Stderr, "  -d <dir>        Share directory (default: current directory)\n")
 		fmt.Fprintf(os.Stderr, "  -auto           Automatically select first available network interface\n")
 		fmt.Fprintf(os.Stderr, "  -enable-ftp     Enable FTP server (default: false)\n")
+		fmt.Fprintf(os.Stderr, "  -enable-mcp     Enable MCP server for AI integration (default: false)\n")
 		fmt.Fprintf(os.Stderr, "  -user <name>    FTP username (default: admin)\n")
 		fmt.Fprintf(os.Stderr, "  -pass <pass>    FTP password (default: admin)\n")
 		fmt.Fprintf(os.Stderr, "  -h              Show this help message\n")
@@ -48,6 +50,7 @@ func Init(version, lastCommit string) {
 	dir := flag.String("d", "./", "Share directory")
 	autoIP := flag.Bool("auto", false, "Automatically select first available network interface")
 	enableFTP := flag.Bool("enable-ftp", false, "Enable FTP server")
+	enableMCP := flag.Bool("enable-mcp", false, "Enable MCP server for AI integration")
 	user := flag.String("user", "admin", "FTP username")
 	pass := flag.String("pass", "admin", "FTP password")
 
@@ -58,6 +61,7 @@ func Init(version, lastCommit string) {
 	AppConfig.Root = *dir
 	AppConfig.AutoSelect = *autoIP
 	AppConfig.EnableFTP = *enableFTP
+	AppConfig.EnableMCP = *enableMCP
 	AppConfig.Username = *user
 	AppConfig.Password = *pass
 }

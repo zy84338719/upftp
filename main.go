@@ -9,6 +9,7 @@ import (
 
 	"github.com/zy84338719/upftp/internal/cli"
 	"github.com/zy84338719/upftp/internal/config"
+	"github.com/zy84338719/upftp/internal/mcp"
 	"github.com/zy84338719/upftp/internal/network"
 	"github.com/zy84338719/upftp/internal/server"
 )
@@ -20,6 +21,14 @@ var (
 
 func main() {
 	config.Init(Version, LastCommit)
+
+	if config.AppConfig.EnableMCP {
+		mcpServer := mcp.NewMCPServer()
+		if err := mcpServer.Start(context.Background()); err != nil {
+			log.Fatal("MCP server error:", err)
+		}
+		return
+	}
 
 	selectedIP, err := network.GetInfo(
 		config.AppConfig.AutoSelect,
