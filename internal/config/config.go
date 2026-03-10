@@ -28,6 +28,12 @@ type Config struct {
 		Password string `yaml:"password"`
 	} `yaml:"http_auth"`
 
+	HTTPS struct {
+		Enabled  bool   `yaml:"enabled"`
+		CertFile string `yaml:"cert_file"`
+		KeyFile  string `yaml:"key_file"`
+	} `yaml:"https"`
+
 	Logging struct {
 		Level  string `yaml:"level"`
 		Format string `yaml:"format"`
@@ -130,6 +136,7 @@ func Init(version, lastCommit string) {
 	if AppConfig.Upload.MaxSize == 0 {
 		AppConfig.Upload.MaxSize = 100 * 1024 * 1024
 	}
+	AppConfig.Upload.Enabled = true
 }
 
 func loadConfigFile() {
