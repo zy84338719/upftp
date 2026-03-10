@@ -4,32 +4,66 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
+	"path/filepath"
+	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Port       string
-	FTPPort    string
-	Root       string
-	AutoSelect bool
-	EnableFTP  bool
-	Username   string
-	Password   string
-	Version    string
-	LastCommit string
-	EnableMCP  bool
+	Port       string `yaml:"port"`
+	FTPPort    string `yaml:"ftp_port"`
+	Root       string `yaml:"root"`
+	AutoSelect bool   `yaml:"auto_select"`
+	EnableFTP  bool   `yaml:"enable_ftp"`
+	EnableMCP  bool   `yaml:"enable_mcp"`
+	Username   string `yaml:"username"`
+	Password   string `yaml:"password"`
+	Version    string `yaml:"-"`
+	LastCommit string `yaml:"-"`
+
+	HTTPAuth struct {
+		Enabled  bool   `yaml:"enabled"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+	} `yaml:"http_auth"`
+
+	Logging struct {
+		Level  string `yaml:"level"`
+		Format string `yaml:"format"`
+	} `yaml:"logging"`
+
+	Upload struct {
+		Enabled    bool   `yaml:"enabled"`
+		MaxSize    int64  `yaml:"max_size"`
+		AllowTypes string `yaml:"allow_types"`
+	} `yaml:"upload"`
 }
 
 var AppConfig *Config
+
+var configPaths = []string{
+	"./upftp.yaml",
+	"./upftp.yml",
+	"~/.upftp/config.yaml",
+	"/etc/upftp/config.yaml",
+}
 
 func Init(version, lastCommit string) {
 	AppConfig = &Config{
 		Version:    version,
 		LastCommit: lastCommit,
+		Port:       ":10000",
+		FTPPort:    ":2121",
+		Root:       "./",
+		Username:   "admin",
+		Password:   "admin",
 	}
 
+	loadConfigFile()
+
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "upftp - A lightweight file sharing server with FTP and MCP support\n\n")
+		fmt.Fprintf(os.Stderr, "upftp - AI-first lightweight file sharing server\n\n")
 		fmt.Fprintf(os.Stderr, "Project: https://github.com/zy84338719/upftp\n\n")
 		fmt.Fprintf(os.Stderr, "Usage:\n")
 		fmt.Fprintf(os.Stderr, "  upftp [options]\n\n")
@@ -40,46 +74,118 @@ func Init(version, lastCommit string) {
 		fmt.Fprintf(os.Stderr, "  -auto           Automatically select first available network interface\n")
 		fmt.Fprintf(os.Stderr, "  -enable-ftp     Enable FTP server (default: false)\n")
 		fmt.Fprintf(os.Stderr, "  -enable-mcp     Enable MCP server for AI integration (default: false)\n")
+		fmt.Fprintf(os.Stderr, "  -config <file>  Configuration file path (default: ./upftp.yaml)\n")
 		fmt.Fprintf(os.Stderr, "  -user <name>    FTP username (default: admin)\n")
 		fmt.Fprintf(os.Stderr, "  -pass <pass>    FTP password (default: admin)\n")
 		fmt.Fprintf(os.Stderr, "  -h              Show this help message\n")
 	}
 
-	p := flag.String("p", "10000", "HTTP server port")
-	ftpPort := flag.String("ftp", "2121", "FTP server port")
-	dir := flag.String("d", "./", "Share directory")
+	p := flag.String("p", "", "HTTP server port")
+	ftpPort := flag.String("ftp", "", "FTP server port")
+	dir := flag.String("d", "", "Share directory")
 	autoIP := flag.Bool("auto", false, "Automatically select first available network interface")
 	enableFTP := flag.Bool("enable-ftp", false, "Enable FTP server")
 	enableMCP := flag.Bool("enable-mcp", false, "Enable MCP server for AI integration")
-	user := flag.String("user", "admin", "FTP username")
-	pass := flag.String("pass", "admin", "FTP password")
+	configFile := flag.String("config", "", "Configuration file path")
+	user := flag.String("user", "", "FTP username")
+	pass := flag.String("pass", "", "FTP password")
 
 	flag.Parse()
 
-	AppConfig.Port = ":" + *p
-	AppConfig.FTPPort = ":" + *ftpPort
-	AppConfig.Root = *dir
-	AppConfig.AutoSelect = *autoIP
-	AppConfig.EnableFTP = *enableFTP
-	AppConfig.EnableMCP = *enableMCP
-	AppConfig.Username = *user
-	AppConfig.Password = *pass
+	if *configFile != "" {
+		loadConfigFromFile(*configFile)
+	}
+
+	if *p != "" {
+		AppConfig.Port = ":" + *p
+	}
+	if *ftpPort != "" {
+		AppConfig.FTPPort = ":" + *ftpPort
+	}
+	if *dir != "" {
+		AppConfig.Root = *dir
+	}
+	if *autoIP {
+		AppConfig.AutoSelect = true
+	}
+	if *enableFTP {
+		AppConfig.EnableFTP = true
+	}
+	if *enableMCP {
+		AppConfig.EnableMCP = true
+	}
+	if *user != "" {
+		AppConfig.Username = *user
+	}
+	if *pass != "" {
+		AppConfig.Password = *pass
+	}
+
+	if AppConfig.Logging.Level == "" {
+		AppConfig.Logging.Level = "info"
+	}
+	if AppConfig.Logging.Format == "" {
+		AppConfig.Logging.Format = "text"
+	}
+	if AppConfig.Upload.MaxSize == 0 {
+		AppConfig.Upload.MaxSize = 100 * 1024 * 1024
+	}
+}
+
+func loadConfigFile() {
+	for _, path := range configPaths {
+		expandedPath := expandPath(path)
+		if _, err := os.Stat(expandedPath); err == nil {
+			loadConfigFromFile(expandedPath)
+			return
+		}
+	}
+}
+
+func loadConfigFromFile(path string) {
+	expandedPath := expandPath(path)
+	data, err := os.ReadFile(expandedPath)
+	if err != nil {
+		return
+	}
+
+	if err := yaml.Unmarshal(data, AppConfig); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to parse config file: %v\n", err)
+	}
+}
+
+func expandPath(path string) string {
+	if strings.HasPrefix(path, "~/") {
+		home, _ := os.UserHomeDir()
+		return filepath.Join(home, path[2:])
+	}
+	return path
 }
 
 func (c *Config) GetHTTPPort() int {
-	port := c.Port[1:]
-	if p, err := strconv.Atoi(port); err == nil {
-		return p
+	port := c.Port
+	if strings.HasPrefix(port, ":") {
+		port = port[1:]
 	}
-	return 10000
+	var p int
+	fmt.Sscanf(port, "%d", &p)
+	if p == 0 {
+		return 10000
+	}
+	return p
 }
 
 func (c *Config) GetFTPPort() int {
-	port := c.FTPPort[1:]
-	if p, err := strconv.Atoi(port); err == nil {
-		return p
+	port := c.FTPPort
+	if strings.HasPrefix(port, ":") {
+		port = port[1:]
 	}
-	return 2121
+	var p int
+	fmt.Sscanf(port, "%d", &p)
+	if p == 0 {
+		return 2121
+	}
+	return p
 }
 
 func (c *Config) HTTPAddr() string {
@@ -88,4 +194,39 @@ func (c *Config) HTTPAddr() string {
 
 func (c *Config) FTPAddr() string {
 	return c.FTPPort
+}
+
+func GenerateSampleConfig() string {
+	return `# UPFTP Configuration File
+# https://github.com/zy84338719/upftp
+
+# Server settings
+port: "10000"
+ftp_port: "2121"
+root: "./"
+auto_select: false
+enable_ftp: false
+enable_mcp: false
+
+# FTP credentials
+username: "admin"
+password: "admin"
+
+# HTTP Basic Authentication
+http_auth:
+  enabled: false
+  username: "admin"
+  password: "admin123"
+
+# Logging settings
+logging:
+  level: "info"      # debug, info, warn, error
+  format: "text"     # text, json
+
+# Upload settings
+upload:
+  enabled: true
+  max_size: 104857600  # 100MB in bytes
+  allow_types: ""      # empty = all types, or ".jpg,.png,.pdf"
+`
 }
