@@ -24,6 +24,21 @@
   <a href="https://github.com/zy84338719/upftp/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/github/license/zy84338719/upftp?style=flat-square">
   </a>
+  <a href="https://github.com/zy84338719/upftp/stargazers">
+    <img src="https://img.shields.io/github/stars/zy84338719/upftp?style=flat-square">
+  </a>
+  <a href="https://github.com/zy84338719/upftp/network/members">
+    <img src="https://img.shields.io/github/forks/zy84338719/upftp?style=flat-square">
+  </a>
+</p>
+
+<p align="center">
+  <a href="#-主要特性">特性</a> •
+  <a href="#-截图展示">截图</a> •
+  <a href="#-快速开始">安装</a> •
+  <a href="#-使用方法">使用</a> •
+  <a href="#-常见问题">FAQ</a> •
+  <a href="#-贡献">贡献</a>
 </p>
 
 [English](#english) | [中文](#中文)
@@ -31,6 +46,13 @@
 ---
 
 # 中文
+
+## 📸 截图展示
+
+<div align="center">
+  <img src="img.png" alt="UPFTP Screenshot" width="80%">
+  <p><em>Web界面预览</em></p>
+</div>
 
 ## ✨ 主要特性
 
@@ -204,13 +226,171 @@ make package
 make help
 ```
 
+## 🔧 技术栈
+
+- **语言**: Go 1.21+
+- **Web框架**: 标准库 `net/http`
+- **FTP服务器**: 自定义实现
+- **前端**: 原生 HTML/CSS/JavaScript
+- **构建工具**: Make, GoReleaser
+- **CI/CD**: GitHub Actions
+
 ## 📖 详细文档
 
-查看 [INSTALL.md](INSTALL.md) 获取完整的安装和使用说明。
+- [安装指南](INSTALL.md) - 详细的安装和配置说明
+- [使用示例](EXAMPLES.md) - 各种使用场景示例
+- [更新日志](CHANGELOG.md) - 版本更新记录
+
+## ❓ 常见问题
+
+<details>
+<summary><b>如何更改默认端口？</b></summary>
+
+使用 `-p` 参数指定HTTP端口：
+```bash
+./upftp -p 8080
+```
+</details>
+
+<details>
+<summary><b>如何设置FTP密码？</b></summary>
+
+使用 `-user` 和 `-pass` 参数：
+```bash
+./upftp -enable-ftp -user myuser -pass mypassword
+```
+</details>
+
+<details>
+<summary><b>如何在后台运行？</b></summary>
+
+在Linux系统上使用systemd服务：
+```bash
+sudo systemctl start upftp
+sudo systemctl enable upftp  # 开机自启
+```
+
+或者在命令行使用 `nohup`：
+```bash
+nohup ./upftp -auto > upftp.log 2>&1 &
+```
+</details>
+
+<details>
+<summary><b>端口被占用怎么办？</b></summary>
+
+检查端口占用：
+```bash
+# Linux/macOS
+lsof -i :10000
+netstat -tlnp | grep 10000
+
+# 使用其他端口
+./upftp -p 10001
+```
+</details>
+
+<details>
+<summary><b>如何配置防火墙？</b></summary>
+
+```bash
+# Ubuntu/Debian (ufw)
+sudo ufw allow 10000/tcp
+sudo ufw allow 2121/tcp  # 如果启用了FTP
+
+# CentOS/RHEL (firewalld)
+sudo firewall-cmd --permanent --add-port=10000/tcp
+sudo firewall-cmd --permanent --add-port=2121/tcp
+sudo firewall-cmd --reload
+```
+</details>
+
+<details>
+<summary><b>支持哪些文件类型的预览？</b></summary>
+
+- **图片**: JPG, PNG, GIF, SVG, WebP, BMP, ICO
+- **视频**: MP4, AVI, MOV, WebM, MKV, M4V
+- **音频**: MP3, WAV, FLAC, AAC, OGG, M4A
+- **代码/文本**: 支持语法高亮的多种编程语言
+- **文档**: PDF可在浏览器预览，Office文档提供下载
+</details>
+
+更多问题请查看 [EXAMPLES.md](EXAMPLES.md) 或提交 [Issue](https://github.com/zy84338719/upftp/issues)。
+
+## 🔒 安全建议
+
+1. **更改默认密码**: 使用 `-user` 和 `-pass` 设置强密码
+2. **网络隔离**: 仅在可信网络环境中使用，或在防火墙中限制访问IP
+3. **文件权限**: 注意共享目录的读写权限设置
+4. **HTTPS支持**: 生产环境建议配合反向代理（如Nginx）使用HTTPS
+
+## 🤝 贡献
+
+欢迎贡献代码、报告Bug或提出新功能建议！
+
+### 贡献方式
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+### 开发指南
+
+```bash
+# 克隆仓库
+git clone https://github.com/zy84338719/upftp.git
+cd upftp
+
+# 安装依赖
+make deps
+
+# 运行测试
+make test
+
+# 本地构建
+make build
+
+# 代码格式化
+make fmt
+```
+
+## 📝 待办事项
+
+- [ ] 添加HTTPS支持
+- [ ] 添加用户认证系统
+- [ ] 支持文件上传
+- [ ] 添加WebDAV支持
+- [ ] 国际化支持更多语言
+- [ ] 添加文件缩略图缓存
+- [ ] 支持自定义主题
+
+## ⭐ Star History
+
+<a href="https://github.com/zy84338719/upftp/stargazers">
+  <img src="https://starchart.cc/zy84338719/upftp.svg" alt="Star History Chart" width="100%">
+</a>
+
+## 📄 许可证
+
+本项目采用 MIT 许可证 - 详见 [LICENSE.txt](LICENSE.txt) 文件。
+
+## 🙏 致谢
+
+- 感谢所有贡献者的付出
+- 感谢开源社区的支持
 
 ---
 
 # English
+
+## 📸 Screenshots
+
+<div align="center">
+  <img src="img.png" alt="UPFTP Screenshot" width="80%">
+  <p><em>Web Interface Preview</em></p>
+</div>
 
 ## ✨ Key Features
 
@@ -384,13 +564,160 @@ make package
 make help
 ```
 
+## 🔧 Tech Stack
+
+- **Language**: Go 1.21+
+- **Web Framework**: Standard library `net/http`
+- **FTP Server**: Custom implementation
+- **Frontend**: Native HTML/CSS/JavaScript
+- **Build Tools**: Make, GoReleaser
+- **CI/CD**: GitHub Actions
+
 ## 📖 Documentation
 
-See [INSTALL.md](INSTALL.md) for complete installation and usage instructions.
+- [Installation Guide](INSTALL.md) - Detailed installation and configuration
+- [Usage Examples](EXAMPLES.md) - Various usage scenarios
+- [Changelog](CHANGELOG.md) - Version update history
 
-## 📝 License
+## ❓ FAQ
 
-[MIT](LICENSE.txt)
+<details>
+<summary><b>How to change the default port?</b></summary>
+
+Use the `-p` parameter to specify HTTP port:
+```bash
+./upftp -p 8080
+```
+</details>
+
+<details>
+<summary><b>How to set FTP credentials?</b></summary>
+
+Use `-user` and `-pass` parameters:
+```bash
+./upftp -enable-ftp -user myuser -pass mypassword
+```
+</details>
+
+<details>
+<summary><b>How to run in background?</b></summary>
+
+Use systemd service on Linux:
+```bash
+sudo systemctl start upftp
+sudo systemctl enable upftp  # Auto-start on boot
+```
+
+Or use `nohup` command:
+```bash
+nohup ./upftp -auto > upftp.log 2>&1 &
+```
+</details>
+
+<details>
+<summary><b>Port already in use?</b></summary>
+
+Check port usage:
+```bash
+# Linux/macOS
+lsof -i :10000
+netstat -tlnp | grep 10000
+
+# Use a different port
+./upftp -p 10001
+```
+</details>
+
+<details>
+<summary><b>How to configure firewall?</b></summary>
+
+```bash
+# Ubuntu/Debian (ufw)
+sudo ufw allow 10000/tcp
+sudo ufw allow 2121/tcp  # If FTP is enabled
+
+# CentOS/RHEL (firewalld)
+sudo firewall-cmd --permanent --add-port=10000/tcp
+sudo firewall-cmd --permanent --add-port=2121/tcp
+sudo firewall-cmd --reload
+```
+</details>
+
+<details>
+<summary><b>What file types are supported for preview?</b></summary>
+
+- **Images**: JPG, PNG, GIF, SVG, WebP, BMP, ICO
+- **Videos**: MP4, AVI, MOV, WebM, MKV, M4V
+- **Audio**: MP3, WAV, FLAC, AAC, OGG, M4A
+- **Code/Text**: Multiple programming languages with syntax highlighting
+- **Documents**: PDF preview in browser, Office documents available for download
+</details>
+
+For more questions, check [EXAMPLES.md](EXAMPLES.md) or submit an [Issue](https://github.com/zy84338719/upftp/issues).
+
+## 🔒 Security Recommendations
+
+1. **Change Default Password**: Use `-user` and `-pass` to set strong credentials
+2. **Network Isolation**: Only use in trusted network environments or restrict access via firewall
+3. **File Permissions**: Pay attention to read/write permissions on shared directories
+4. **HTTPS Support**: For production, use with reverse proxy (e.g., Nginx) for HTTPS
+
+## 🤝 Contributing
+
+Contributions, bug reports, and feature requests are welcome!
+
+### How to Contribute
+
+1. Fork this repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Development Guide
+
+```bash
+# Clone repository
+git clone https://github.com/zy84338719/upftp.git
+cd upftp
+
+# Install dependencies
+make deps
+
+# Run tests
+make test
+
+# Local build
+make build
+
+# Code formatting
+make fmt
+```
+
+## 📝 Roadmap
+
+- [ ] Add HTTPS support
+- [ ] Add user authentication system
+- [ ] Support file upload
+- [ ] Add WebDAV support
+- [ ] Internationalization for more languages
+- [ ] Add file thumbnail caching
+- [ ] Support custom themes
+
+## ⭐ Star History
+
+<a href="https://github.com/zy84338719/upftp/stargazers">
+  <img src="https://starchart.cc/zy84338719/upftp.svg" alt="Star History Chart" width="100%">
+</a>
+
+## 📄 License
+
+This project is licensed under the MIT License - see [LICENSE.txt](LICENSE.txt) for details.
+
+## 🙏 Acknowledgments
+
+- Thanks to all contributors for their efforts
+- Thanks to the open source community for support
 
 ---
 

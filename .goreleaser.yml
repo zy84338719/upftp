@@ -1,3 +1,9 @@
+version: 1
+
+before:
+  hooks:
+    - go mod tidy
+
 builds:
   - env:
       - CGO_ENABLED=0
@@ -18,6 +24,7 @@ builds:
       - -s -w
       - -X main.Version={{.Version}}
       - -X main.LastCommit={{.ShortCommit}}
+    binary: upftp
 
 archives:
   - format: tar.gz
@@ -29,66 +36,79 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
+    files:
+      - README.md
+      - LICENSE.txt
 
-# Debian packages
 nfpms:
-  - id: packages
+  - id: upftp
     package_name: upftp
     vendor: Zhang Yi
     homepage: https://github.com/zy84338719/upftp
     maintainer: Zhang Yi <zy84338719@gmail.com>
-    description: |
-      Modern cross-platform file sharing server with web interface.
-      UPFTP provides both HTTP and FTP protocols for easy file sharing.
+    description: Modern cross-platform file sharing server with HTTP and FTP support
     license: MIT
     formats:
       - deb
       - rpm
+      - archlinux
     bindir: /usr/bin
     section: net
     priority: optional
     file_name_template: "{{ .ConventionalFileName }}"
     contents:
-      - src: packaging/debian/postinst
-        dst: /usr/share/upftp/postinst
-        file_info:
-          mode: 0755
-      - src: packaging/debian/prerm  
-        dst: /usr/share/upftp/prerm
-        file_info:
-          mode: 0755
-      - src: packaging/debian/postrm
-        dst: /usr/share/upftp/postrm
-        file_info:
-          mode: 0755
+      - src: packaging/systemd/upftp.service
+        dst: /etc/systemd/system/upftp.service
+      - src: packaging/config/upftp.conf
+        dst: /etc/upftp/upftp.conf
+        type: config|noreplace
     scripts:
       postinstall: packaging/debian/postinst
       preremove: packaging/debian/prerm
       postremove: packaging/debian/postrm
-    dependencies:
-      - libc6 (>= 2.17)
-    suggests:
+    recommends:
       - systemd
+    deb:
+      lintian_overrides:
+        - statically-linked-binary
+        - changelog-file-missing-in-native-package
 
-# Homebrew tap
 brews:
-  - repository:
+  - name: upftp
+    repository:
       owner: zy84338719
       name: homebrew-tap
+      branch: main
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     folder: Formula
     homepage: https://github.com/zy84338719/upftp
     description: Modern cross-platform file sharing server
     license: MIT
-    skip_upload: auto
-    test: |
-      assert_match "upftp", shell_output("#{bin}/upftp -h")
-    service: |
+    skip_upload: false
+    install: |-
+      bin.install "upftp"
+    service: |-
       run [opt_bin/"upftp", "-auto", "-d", var/"upftp"]
       keep_alive true
       log_path var/"log/upftp.log"
       error_log_path var/"log/upftp.error.log"
       working_dir var/"upftp"
+    test: |-
+      system "#{bin}/upftp", "-h"
+
+scoops:
+  - bucket:
+      owner: zy84338719
+      name: scoop-bucket
+      branch: main
+      token: "{{ .Env.SCOP_GITHUB_TOKEN }}"
+    folder: bucket
+    homepage: https://github.com/zy84338719/upftp
+    description: Modern cross-platform file sharing server
+    license: MIT
+    short_description: File sharing server
+    persist:
+      - data
 
 checksum:
   name_template: 'checksums.txt'
@@ -98,6 +118,7 @@ snapshot:
 
 changelog:
   sort: asc
+  use: github
   filters:
     exclude:
       - '^docs:'
@@ -108,11 +129,49 @@ changelog:
       - Merge remote-tracking branch
       - Merge branch
   groups:
-    - title: 🚀 Features
+    - title: '🚀 Features'
       regexp: "^.*feat[(\\w)]*:+.*$"
       order: 0
-    - title: 🐛 Bug fixes
+    - title: '🐛 Bug fixes'
       regexp: "^.*fix[(\\w)]*:+.*$"
       order: 1
-    - title: 📖 Others
-      order: 999 
+    - title: '📝 Documentation'
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 2
+    - title: '🔧 Others'
+      order: 999
+
+release:
+  footer: |
+    ## Installation
+    
+    ### macOS (Homebrew)
+    ```bash
+    brew tap zy84338719/tap
+    brew install upftp
+    ```
+    
+    ### Ubuntu/Debian
+    ```bash
+    # Download .deb from assets below
+    sudo dpkg -i upftp_*.deb
+    sudo systemctl start upftp
+    ```
+    
+    ### CentOS/RHEL/Fedora
+    ```bash
+    # Download .rpm from assets below
+    sudo rpm -i upftp-*.rpm
+    sudo systemctl start upftp
+    ```
+    
+    ### Windows (Scoop)
+    ```powershell
+    scoop bucket add zy84338719 https://github.com/zy84338719/scoop-bucket
+    scoop install upftp
+    ```
+    
+    ### Manual
+    Download the binary for your platform from the assets below.
+
+    Full documentation: https://github.com/zy84338719/upftp#readme

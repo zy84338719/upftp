@@ -34,7 +34,6 @@ type FileInfo struct {
 }
 
 var fileTypeMap = map[string]FileType{
-	// Images
 	".jpg":  FileTypeImage,
 	".jpeg": FileTypeImage,
 	".png":  FileTypeImage,
@@ -44,7 +43,6 @@ var fileTypeMap = map[string]FileType{
 	".svg":  FileTypeImage,
 	".ico":  FileTypeImage,
 
-	// Videos
 	".mp4":  FileTypeVideo,
 	".avi":  FileTypeVideo,
 	".mov":  FileTypeVideo,
@@ -54,7 +52,6 @@ var fileTypeMap = map[string]FileType{
 	".mkv":  FileTypeVideo,
 	".m4v":  FileTypeVideo,
 
-	// Audio
 	".mp3":  FileTypeAudio,
 	".wav":  FileTypeAudio,
 	".flac": FileTypeAudio,
@@ -63,7 +60,6 @@ var fileTypeMap = map[string]FileType{
 	".wma":  FileTypeAudio,
 	".m4a":  FileTypeAudio,
 
-	// Text files
 	".txt":  FileTypeText,
 	".md":   FileTypeText,
 	".json": FileTypeText,
@@ -76,7 +72,6 @@ var fileTypeMap = map[string]FileType{
 	".conf": FileTypeText,
 	".cfg":  FileTypeText,
 
-	// Code files
 	".go":   FileTypeCode,
 	".js":   FileTypeCode,
 	".ts":   FileTypeCode,
@@ -92,7 +87,6 @@ var fileTypeMap = map[string]FileType{
 	".sh":   FileTypeCode,
 	".sql":  FileTypeCode,
 
-	// Documents
 	".pdf":  FileTypePDF,
 	".doc":  FileTypeDocument,
 	".docx": FileTypeDocument,
@@ -105,7 +99,6 @@ var fileTypeMap = map[string]FileType{
 	".ods":  FileTypeDocument,
 	".odp":  FileTypeDocument,
 
-	// Archives
 	".zip": FileTypeArchive,
 	".rar": FileTypeArchive,
 	".7z":  FileTypeArchive,
@@ -207,19 +200,15 @@ func FormatFileSize(size int64) string {
 }
 
 func IsPathSafe(path string) bool {
-	// 检查原始路径是否包含危险字符
 	if strings.Contains(path, "..") || strings.HasPrefix(path, "/") {
 		return false
 	}
-	
-	// 使用filepath.Clean清理路径后，再次检查
+
 	cleanPath := filepath.Clean(path)
-	
-	// 如果清理后的路径与原始路径不同，且原始路径包含".."，则不安全
+
 	if path != cleanPath && strings.Contains(path, "..") {
 		return false
 	}
-	
-	// 确保清理后的路径不以"/"开头且不包含".."
+
 	return !strings.Contains(cleanPath, "..") && !strings.HasPrefix(cleanPath, "/")
 }
