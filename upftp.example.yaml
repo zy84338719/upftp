@@ -1,37 +1,87 @@
-# UPFTP Configuration File
-# https://github.com/zy84338719/upftp
+# ╔════════════════════════════════════════════════════════════════╗
+# ║                    UPFTP Configuration File                    ║
+# ║            https://github.com/zy84338719/upftp                 ║
+# ╚════════════════════════════════════════════════════════════════╝
 
-# Server settings
+# ────────────────────────────────────────────────────────────────
+# 🌐 Server Settings
+# ────────────────────────────────────────────────────────────────
+# HTTP server port (default: 10000)
 port: "10000"
+
+# FTP server port (default: 2121, only used when enable_ftp is true)
 ftp_port: "2121"
+
+# Root directory to share (use "./" for current directory)
 root: "./"
+
+# Auto-select network interface (true = first available, false = manual selection)
 auto_select: false
+
+# Enable FTP server (requires ftp_port)
 enable_ftp: false
+
+# Enable MCP (Model Context Protocol) for AI integration (Claude Desktop)
 enable_mcp: false
 
-# FTP credentials
+# ────────────────────────────────────────────────────────────────
+# 🔐 FTP Credentials
+# ────────────────────────────────────────────────────────────────
+# Default credentials for FTP access
 username: "admin"
 password: "admin"
 
-# HTTP Basic Authentication
+# ────────────────────────────────────────────────────────────────
+# 🔒 HTTP Basic Authentication
+# ────────────────────────────────────────────────────────────────
+# Protect web interface with username/password
 http_auth:
   enabled: false
   username: "admin"
   password: "admin123"
 
-# HTTPS settings (requires cert_file and key_file)
+# ────────────────────────────────────────────────────────────────
+# 🔒 HTTPS Settings
+# ────────────────────────────────────────────────────────────────
+# Enable HTTPS with custom SSL certificates
+# To enable: generate certs with 'openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes'
 https:
   enabled: false
   cert_file: "/path/to/cert.pem"
   key_file: "/path/to/key.pem"
 
-# Logging settings
+# ────────────────────────────────────────────────────────────────
+# 📝 Logging Settings
+# ────────────────────────────────────────────────────────────────
 logging:
-  level: "info"      # debug, info, warn, error
-  format: "text"     # text, json
+  level: "info"      # Options: debug, info, warn, error
+  format: "text"     # Options: text (colored), json (machine-readable)
 
-# Upload settings
+# ────────────────────────────────────────────────────────────────
+# 📤 Upload Settings
+# ────────────────────────────────────────────────────────────────
+# Allow file uploads through web interface
 upload:
   enabled: true
-  max_size: 104857600  # 100MB in bytes
-  allow_types: ""      # empty = all types, or ".jpg,.png,.pdf"
+  max_size: 104857600  # 100MB in bytes (104857600 = 100MB, 52428800 = 50MB, 10485760 = 10MB)
+  allow_types: ""      # Allowed file extensions (empty = all types, or ".jpg,.png,.pdf,.zip")
+
+# ────────────────────────────────────────────────────────────────
+# 📚 Advanced Usage Examples
+# ────────────────────────────────────────────────────────────────
+# Example 1: Basic file server
+#   port: "8080"
+#   root: "/home/user/shared"
+#   enable_ftp: false
+#
+# Example 2: Secure server with auth
+#   http_auth:
+#     enabled: true
+#     username: "myuser"
+#     password: "mypassword123"
+#
+# Example 3: FTP + HTTP with upload
+#   enable_ftp: true
+#   upload:
+#     enabled: true
+#     max_size: 524288000  # 500MB
