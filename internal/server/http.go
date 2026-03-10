@@ -2,16 +2,15 @@ package server
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/zy84338719/upftp/internal/config"
 	"github.com/zy84338719/upftp/internal/handlers"
+	"github.com/zy84338719/upftp/internal/logger"
 )
 
 type HTTPServer struct {
 	server *http.Server
-	info   *handlers.ServerInfo
 }
 
 func NewHTTPServer() *HTTPServer {
@@ -31,14 +30,34 @@ func (s *HTTPServer) Start(ctx context.Context, ip string, httpPort, ftpPort int
 
 	go func() {
 		<-ctx.Done()
-		log.Println("Stopping HTTP server...")
+		logger.Info("Stopping HTTP server...")
 		s.server.Shutdown(context.Background())
 	}()
 
-	log.Printf("HTTP server starting on %s%s", ip, config.AppConfig.HTTPAddr())
-	log.Printf("Web interface: http://%s%s", ip, config.AppConfig.HTTPAddr())
+	protocol := "HTTP"
+	if config.AppConfig.HTTPS.Enabled {
+		protocol = "HTTPS"
+	}
 
-	if err := s.server.ListenAndServe(); err != http.ErrServerClosed {
+	logger.Info("%s server starting on %s:%d", protocol, ip, httpPort)
+	if config.AppConfig.HTTPS.Enabled {
+		logger.Info("Web interface: https://%s:%d", ip, httpPort)
+	} else {
+		logger.Info("Web interface: http://%s:%d", ip, httpPort)
+	}
+
+	var err error
+	if config.AppConfig.HTTPS.Enabled {
+		if config.AppConfig.HTTPS.CertFile == "" || config.AppConfig.HTTPS.KeyFile == "" {
+			logger.Error("HTTPS enabled but cert_file or key_file not specified")
+			return nil
+		}
+		err = s.server.ListenAndServeTLS(config.AppConfig.HTTPS.CertFile, config.AppConfig.HTTPS.KeyFile)
+	} else {
+		err = s.server.ListenAndServe()
+	}
+
+	if err != http.ErrServerClosed {
 		return err
 	}
 
