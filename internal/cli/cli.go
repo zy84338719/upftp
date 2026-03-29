@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/zy84338719/upftp/v2/internal/config"
+	"github.com/zy84338719/upftp/internal/config"
 )
 
 type CLI struct {
