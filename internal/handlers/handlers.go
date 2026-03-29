@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"archive/zip"
+	"context"
 	"embed"
 	"encoding/base64"
 	"encoding/json"
@@ -47,14 +48,27 @@ func GetServerInfo() *ServerInfo {
 }
 
 func RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/api/info", HandleServerInfo)
-	mux.HandleFunc("/api/tree", HandleDirectoryTree)
-	mux.HandleFunc("/api/upload", handleUpload)
-	mux.HandleFunc("/api/qrcode", handleQRCode)
-	mux.HandleFunc("/api/create-folder", handleCreateFolder)
-	mux.HandleFunc("/api/delete", handleDelete)
-	mux.HandleFunc("/api/rename", handleRename)
-	mux.Handle("/files/", http.StripPrefix("/files/", http.FileServer(http.Dir(config.AppConfig.Root))))
+	// 公开路由（无需认证）
+	mux.HandleFunc("/login", HandleLoginPage)
+	mux.HandleFunc("/api/login", HandleLogin)
+	mux.HandleFunc("/logout", HandleLogout)
+
+	// 现代化页面路由（暂时公开，	mux.HandleFunc("/modern/", handleModernIndex)
+	mux.HandleFunc("/modern/*", handleModernIndex)
+
+	// 保护的 API 端点
+	mux.HandleFunc("/api/info", withAuth(HandleServerInfo))
+	mux.HandleFunc("/api/tree", withAuth(HandleDirectoryTree))
+	mux.HandleFunc("/api/upload", withAuth(handleUpload))
+	mux.HandleFunc("/api/qrcode", withAuth(handleQRCode))
+	mux.HandleFunc("/api/create-folder", withAuth(handleCreateFolder))
+	mux.HandleFunc("/api/delete", withAuth(handleDelete))
+	mux.HandleFunc("/api/rename", withAuth(handleRename))
+
+	// 保护的文件访问
+	mux.HandleFunc("/files/", withAuth(handleFiles))
+
+	// 保护的主要路由
 	mux.HandleFunc("/", withAuth(handleIndex))
 	mux.HandleFunc("/download/", withAuth(handleDownload))
 	mux.HandleFunc("/preview/", withAuth(handlePreview))
@@ -67,14 +81,37 @@ func withAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		user, pass, ok := r.BasicAuth()
-		if !ok || user != config.AppConfig.HTTPAuth.Username || pass != config.AppConfig.HTTPAuth.Password {
-			w.Header().Set("WWW-Authenticate", `Basic realm="UPFTP"`)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			logger.Warn("Unauthorized access attempt from %s", r.RemoteAddr)
-			return
+		// Try session-based authentication first
+		if cookie, err := r.Cookie("auth_token"); err == nil {
+			if session, valid := sessionManager.ValidateSession(cookie.Value); valid {
+				// Add username to context
+				ctx := context.WithValue(r.Context(), "username", session.Username)
+				next(w, r.WithContext(ctx))
+				return
+			}
 		}
-		next(w, r)
+
+		// Fall back to Basic Auth for API clients
+		if user, pass, ok := r.BasicAuth(); ok {
+			if user == config.AppConfig.HTTPAuth.Username && pass == config.AppConfig.HTTPAuth.Password {
+				next(w, r)
+				return
+			}
+		}
+
+		// Authentication failed
+		// For API requests, return JSON error
+		if r.Header.Get("Accept") == "application/json" || r.Header.Get("Content-Type") == "application/json" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error": "Unauthorized",
+			})
+		} else {
+			// For web requests, redirect to login page
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+		}
+		logger.Warn("Unauthorized access attempt from %s", r.RemoteAddr)
 	}
 }
 
@@ -246,6 +283,25 @@ func handlePreview(w http.ResponseWriter, r *http.Request) {
 	mimeType := filehandler.GetMimeType(fileType)
 	w.Header().Set("Content-Type", mimeType)
 
+	http.ServeFile(w, r, filePath)
+}
+
+// handleFiles securely serves static file access with authentication
+func handleFiles(w http.ResponseWriter, r *http.Request) {
+	// Extract file path
+	filename := strings.TrimPrefix(r.URL.Path, "/files/")
+
+	// Security check: prevent path traversal attacks
+	if !filehandler.IsPathSafe(filename) {
+		http.Error(w, "Access denied", http.StatusForbidden)
+		logger.Warn("Blocked unsafe file access: %s from %s", filename, r.RemoteAddr)
+		return
+	}
+
+	// Build full file path
+	filePath := path.Join(config.AppConfig.Root, filename)
+
+	// Serve the file
 	http.ServeFile(w, r, filePath)
 }
 
