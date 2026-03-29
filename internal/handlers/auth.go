@@ -5,9 +5,9 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/zy84338719/upftp/internal/auth"
-	"github.com/zy84338719/upftp/internal/config"
-	"github.com/zy84338719/upftp/internal/logger"
+	"github.com/zy84338719/upftp/v2/internal/auth"
+	"github.com/zy84338719/upftp/v2/internal/config"
+	"github.com/zy84338719/upftp/v2/internal/logger"
 )
 
 var sessionManager = auth.NewSessionManager()
