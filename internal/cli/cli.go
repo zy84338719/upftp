@@ -60,6 +60,14 @@ func (c *CLI) scanDir(pathname string, m map[string]string) {
 	}
 }
 
+func isTerminal() bool {
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
+}
+
 func (c *CLI) Start(ctx context.Context, s chan os.Signal) {
 	c.fileMap = c.ScanDirectory(config.AppConfig.Root)
 
@@ -111,7 +119,12 @@ func (c *CLI) printBanner() {
 func (c *CLI) runLoop(s chan os.Signal) {
 	for {
 		c.printMenu()
-		c.handleInput(s)
+		if !c.handleInput(s) {
+			// stdin closed (EOF), enter headless mode
+			fmt.Println("\n📡 stdin closed, running in headless mode.")
+			fmt.Println("   HTTP/FTP services continue. Send SIGTERM to stop.")
+			return
+		}
 		fmt.Println()
 	}
 }
@@ -134,9 +147,15 @@ func (c *CLI) printMenu() {
 	fmt.Printf("\nEnter command: ")
 }
 
-func (c *CLI) handleInput(s chan os.Signal) {
+func (c *CLI) handleInput(s chan os.Signal) bool {
 	var option string
-	_, _ = fmt.Scanln(&option)
+	n, err := fmt.Scanln(&option)
+	if err != nil || n == 0 {
+		// Check if stdin is truly closed (not just empty input)
+		if err != nil {
+			return false
+		}
+	}
 
 	switch strings.ToLower(option) {
 	case "1":
@@ -175,6 +194,7 @@ func (c *CLI) handleInput(s chan os.Signal) {
 	default:
 		fmt.Println("❌ Invalid option, please try again.")
 	}
+	return true
 }
 
 func (c *CLI) showVersion() {
