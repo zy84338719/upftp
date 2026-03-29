@@ -95,74 +95,104 @@
 
 ## 🚀 快速开始
 
-### 一键安装脚本
+### 方式一：直接下载（推荐）
 
-最简单的安装方式，自动检测系统并选择最佳安装方法：
-
-```bash
-curl -fsSL https://install.upftp.dev | bash
-```
-
-### 包管理器安装
-
-#### Ubuntu/Debian (APT)
+从 [Releases 页面](https://github.com/zy84338719/upftp/releases) 下载对应平台的预编译二进制：
 
 ```bash
-# 添加UPFTP仓库
-curl -fsSL https://apt.upftp.dev/key.gpg | sudo apt-key add -
-echo "deb https://apt.upftp.dev stable main" | sudo tee /etc/apt/sources.list.d/upftp.list
-
-# 安装
-sudo apt update
-sudo apt install upftp
-
-# 启动服务
-sudo systemctl start upftp
-sudo systemctl enable upftp  # 开机自启
-```
-
-#### macOS (Homebrew)
-
-```bash
-# 添加tap并安装
-brew tap zy84338719/tap
-brew install upftp
-
-# 启动服务
-brew services start upftp
-```
-
-#### CentOS/RHEL/Fedora (RPM)
-
-```bash
-# 下载RPM包
-wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_linux_amd64.rpm
-
-# 安装
-sudo rpm -ivh upftp_linux_amd64.rpm
-# 或者使用yum/dnf
-sudo yum localinstall upftp_linux_amd64.rpm
-```
-
-### 手动下载和安装
-
-从 [Releases页面](https://github.com/zy84338719/upftp/releases) 下载适合您系统的版本：
-
-```bash
-# Linux amd64
+# Linux (amd64)
 wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_linux_amd64.tar.gz
-tar -zxvf upftp_linux_amd64.tar.gz
-chmod +x upftp_linux_amd64
+tar -xzf upftp_linux_amd64.tar.gz
+chmod +x upftp
+sudo mv upftp /usr/local/bin/
 
-# macOS (Intel)
-wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_darwin_amd64.tar.gz  
-tar -zxvf upftp_darwin_amd64.tar.gz
-chmod +x upftp_darwin_amd64
+# Linux (arm64)
+wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_linux_arm64.tar.gz
+tar -xzf upftp_linux_arm64.tar.gz
+chmod +x upftp
+sudo mv upftp /usr/local/bin/
 
 # macOS (Apple Silicon)
 wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_darwin_arm64.tar.gz
-tar -zxvf upftp_darwin_arm64.tar.gz  
-chmod +x upftp_darwin_arm64
+tar -xzf upftp_darwin_arm64.tar.gz
+chmod +x upftp
+sudo mv upftp /usr/local/bin/
+
+# macOS (Intel)
+wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_darwin_amd64.tar.gz
+tar -xzf upftp_darwin_amd64.tar.gz
+chmod +x upftp
+sudo mv upftp /usr/local/bin/
+```
+
+### 方式二：编译安装
+
+需要 **Go 1.24+** 环境。
+
+#### macOS
+
+```bash
+# 安装 Go
+brew install go
+
+# 克隆并编译
+git clone https://github.com/zy84338719/upftp.git
+cd upftp
+make deps && make build
+
+# 安装到系统路径
+sudo cp upftp /usr/local/bin/
+```
+
+#### Ubuntu / Debian
+
+```bash
+# 安装 Go（推荐使用官方版本）
+wget https://go.dev/dl/go1.24.1.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.24.1.linux-amd64.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+
+# 克隆并编译
+git clone https://github.com/zy84338719/upftp.git
+cd upftp
+make deps && make build
+
+# 安装到系统路径
+sudo cp upftp /usr/local/bin/
+```
+
+#### CentOS / RHEL / Fedora
+
+```bash
+# 安装 Go
+wget https://go.dev/dl/go1.24.1.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.24.1.linux-amd64.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+
+# 安装 git（如未安装）
+sudo yum install -y git   # CentOS/RHEL
+# sudo dnf install -y git # Fedora
+
+# 克隆并编译
+git clone https://github.com/zy84338719/upftp.git
+cd upftp
+make deps && make build
+
+# 安装到系统路径
+sudo cp upftp /usr/local/bin/
+```
+
+#### 交叉编译其他平台
+
+```bash
+# 查看所有构建目标
+make help
+
+# 编译所有平台（Linux/macOS/Windows, amd64/arm64）
+make build-all
+
+# 编译结果在 dist/ 目录
+ls dist/
 ```
 
 ### 基本使用
@@ -262,29 +292,17 @@ AI 助手可以：
 
 ## 🛠️ 从源码构建
 
-需要 Go 1.21 或更高版本：
+需要 Go 1.24 或更高版本。详见上方 [编译安装](#方式二编译安装) 章节。
 
 ```bash
-# 克隆代码库
 git clone https://github.com/zy84338719/upftp.git
 cd upftp
-
-# 构建当前平台
-make build
-
-# 构建所有平台
-make build-all
-
-# 创建发布包
-make package
-
-# 查看所有构建选项
-make help
+make deps && make build
 ```
 
 ## 🔧 技术栈
 
-- **语言**: Go 1.21+
+- **语言**: Go 1.24+
 - **Web框架**: 标准库 `net/http`
 - **FTP服务器**: 自定义实现
 - **前端**: 原生 HTML/CSS/JavaScript
@@ -489,74 +507,104 @@ make fmt
 
 ## 🚀 Quick Start
 
-### One-line Install Script
+### Option 1: Download Binary (Recommended)
 
-The easiest way to install, automatically detects your system and chooses the best installation method:
-
-```bash
-curl -fsSL https://install.upftp.dev | bash
-```
-
-### Package Manager Installation
-
-#### Ubuntu/Debian (APT)
+Download the pre-built binary for your platform from the [Releases page](https://github.com/zy84338719/upftp/releases):
 
 ```bash
-# Add UPFTP repository
-curl -fsSL https://apt.upftp.dev/key.gpg | sudo apt-key add -
-echo "deb https://apt.upftp.dev stable main" | sudo tee /etc/apt/sources.list.d/upftp.list
-
-# Install
-sudo apt update
-sudo apt install upftp
-
-# Start service
-sudo systemctl start upftp
-sudo systemctl enable upftp  # Enable on boot
-```
-
-#### macOS (Homebrew)
-
-```bash
-# Add tap and install
-brew tap zy84338719/tap
-brew install upftp
-
-# Start service
-brew services start upftp
-```
-
-#### CentOS/RHEL/Fedora (RPM)
-
-```bash
-# Download RPM package
-wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_linux_amd64.rpm
-
-# Install
-sudo rpm -ivh upftp_linux_amd64.rpm
-# Or use yum/dnf
-sudo yum localinstall upftp_linux_amd64.rpm
-```
-
-### Manual Download and Install
-
-Download the appropriate version for your system from the [Releases page](https://github.com/zy84338719/upftp/releases):
-
-```bash
-# Linux amd64
+# Linux (amd64)
 wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_linux_amd64.tar.gz
-tar -zxvf upftp_linux_amd64.tar.gz
-chmod +x upftp_linux_amd64
+tar -xzf upftp_linux_amd64.tar.gz
+chmod +x upftp
+sudo mv upftp /usr/local/bin/
 
-# macOS (Intel)  
-wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_darwin_amd64.tar.gz
-tar -zxvf upftp_darwin_amd64.tar.gz
-chmod +x upftp_darwin_amd64
+# Linux (arm64)
+wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_linux_arm64.tar.gz
+tar -xzf upftp_linux_arm64.tar.gz
+chmod +x upftp
+sudo mv upftp /usr/local/bin/
 
 # macOS (Apple Silicon)
-wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_darwin_arm64.tar.gz  
-tar -zxvf upftp_darwin_arm64.tar.gz
-chmod +x upftp_darwin_arm64
+wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_darwin_arm64.tar.gz
+tar -xzf upftp_darwin_arm64.tar.gz
+chmod +x upftp
+sudo mv upftp /usr/local/bin/
+
+# macOS (Intel)
+wget https://github.com/zy84338719/upftp/releases/latest/download/upftp_darwin_amd64.tar.gz
+tar -xzf upftp_darwin_amd64.tar.gz
+chmod +x upftp
+sudo mv upftp /usr/local/bin/
+```
+
+### Option 2: Build from Source
+
+Requires **Go 1.24+**.
+
+#### macOS
+
+```bash
+# Install Go
+brew install go
+
+# Clone and build
+git clone https://github.com/zy84338719/upftp.git
+cd upftp
+make deps && make build
+
+# Install to system path
+sudo cp upftp /usr/local/bin/
+```
+
+#### Ubuntu / Debian
+
+```bash
+# Install Go (official)
+wget https://go.dev/dl/go1.24.1.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.24.1.linux-amd64.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+
+# Clone and build
+git clone https://github.com/zy84338719/upftp.git
+cd upftp
+make deps && make build
+
+# Install to system path
+sudo cp upftp /usr/local/bin/
+```
+
+#### CentOS / RHEL / Fedora
+
+```bash
+# Install Go
+wget https://go.dev/dl/go1.24.1.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.24.1.linux-amd64.tar.gz
+export PATH=$PATH:/usr/local/go/bin
+
+# Install git (if not installed)
+sudo yum install -y git   # CentOS/RHEL
+# sudo dnf install -y git # Fedora
+
+# Clone and build
+git clone https://github.com/zy84338719/upftp.git
+cd upftp
+make deps && make build
+
+# Install to system path
+sudo cp upftp /usr/local/bin/
+```
+
+#### Cross-compile for other platforms
+
+```bash
+# View all build targets
+make help
+
+# Build all platforms (Linux/macOS/Windows, amd64/arm64)
+make build-all
+
+# Output in dist/
+ls dist/
 ```
 
 ### Basic Usage
@@ -656,20 +704,12 @@ Add to your Claude Desktop config file:
 
 ## 🛠️ Build from Source
 
-Requires Go 1.21 or higher:
+Requires Go 1.24+. See [Build from Source](#option-2-build-from-source) above for per-platform instructions.
 
 ```bash
-# Clone repository
 git clone https://github.com/zy84338719/upftp.git
 cd upftp
-
-# Build for current platform
-make build
-
-# Build for all platforms  
-make build-all
-
-# Create release packages
+make deps && make build
 make package
 
 # View all build options
@@ -678,7 +718,7 @@ make help
 
 ## 🔧 Tech Stack
 
-- **Language**: Go 1.21+
+- **Language**: Go 1.24+
 - **Web Framework**: Standard library `net/http`
 - **FTP Server**: Custom implementation
 - **Frontend**: Native HTML/CSS/JavaScript
