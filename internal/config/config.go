@@ -102,6 +102,9 @@ func Init(version, lastCommit, buildDate, goVersion, platform, projectURL, proje
 		fmt.Fprintf(os.Stderr, "  -config <file>  Configuration file path (default: ./upftp.yaml)\n")
 		fmt.Fprintf(os.Stderr, "  -user <name>    FTP username (default: admin)\n")
 		fmt.Fprintf(os.Stderr, "  -pass <pass>    FTP password (default: admin)\n")
+		fmt.Fprintf(os.Stderr, "  -http-auth      Enable HTTP authentication (default: false)\n")
+		fmt.Fprintf(os.Stderr, "  -http-user <name>  HTTP auth username (default: admin)\n")
+		fmt.Fprintf(os.Stderr, "  -http-pass <pass>  HTTP auth password (default: admin)\n")
 		fmt.Fprintf(os.Stderr, "  -h              Show this help message\n")
 	}
 
@@ -114,6 +117,9 @@ func Init(version, lastCommit, buildDate, goVersion, platform, projectURL, proje
 	configFile := flag.String("config", "", "Configuration file path")
 	user := flag.String("user", "", "FTP username")
 	pass := flag.String("pass", "", "FTP password")
+	httpAuthEnabled := flag.Bool("http-auth", false, "Enable HTTP authentication")
+	httpAuthUser := flag.String("http-user", "", "HTTP auth username")
+	httpAuthPass := flag.String("http-pass", "", "HTTP auth password")
 
 	flag.Parse()
 
@@ -145,6 +151,17 @@ func Init(version, lastCommit, buildDate, goVersion, platform, projectURL, proje
 	}
 	if *pass != "" {
 		AppConfig.Password = *pass
+	}
+
+	// Handle HTTP authentication parameters
+	if *httpAuthEnabled {
+		AppConfig.HTTPAuth.Enabled = true
+	}
+	if *httpAuthUser != "" {
+		AppConfig.HTTPAuth.Username = *httpAuthUser
+	}
+	if *httpAuthPass != "" {
+		AppConfig.HTTPAuth.Password = *httpAuthPass
 	}
 
 	if AppConfig.Logging.Level == "" {

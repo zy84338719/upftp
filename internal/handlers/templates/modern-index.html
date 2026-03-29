@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPFTP - 文件共享</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #FFFFFF;
+            color: #0D0D0D;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            background: #FFFFFF;
+            border-right: 1px solid #E8E8E8;
+            padding: 40px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-mark {
+            width: 32px;
+            height: 32px;
+            background: #E42313;
+        }
+
+        .logo-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: #0D0D0D;
+        }
+
+        .nav-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border-radius: 0;
+            transition: background 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background: #FAFAFA;
+        }
+
+        .nav-item.active {
+            background: #E42313;
+            color: #FFFFFF;
+        }
+
+        .nav-item.active .nav-icon {
+            color: #FFFFFF;
+        }
+
+        .nav-item.active .nav-text {
+            color: #FFFFFF;
+        }
+
+        .nav-icon {
+            width: 16px;
+            height: 16px;
+            color: #7A7A7A;
+            flex-shrink: 0;
+        }
+
+        .nav-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #7A7A7A;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #FFFFFF;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            padding: 40px 48px;
+            border-bottom: 1px solid #E8E8E8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .breadcrumb-item {
+            color: #7A7A7A;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .breadcrumb-item:hover {
+            color: #0D0D0D;
+        }
+
+        .breadcrumb-item.active {
+            color: #0D0D0D;
+        }
+
+        .breadcrumb-separator {
+            color: #B0B0B0;
+        }
+
+        .page-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 40px;
+            font-weight: 500;
+            letter-spacing: -1px;
+            color: #0D0D0D;
+        }
+
+        .right-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border: 1px solid #E8E8E8;
+            border-radius: 0;
+            width: 320px;
+            transition: border-color 0.2s;
+        }
+
+        .search-box:focus-within {
+            border-color: #0D0D0D;
+        }
+
+        .search-icon {
+            width: 16px;
+            height: 16px;
+            color: #B0B0B0;
+            flex-shrink: 0;
+        }
+
+        .search-input {
+            border: none;
+            outline: none;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            width: 100%;
+            color: #0D0D0D;
+        }
+
+        .search-input::placeholder {
+            color: #B0B0B0;
+        }
+
+        .upload-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #E42313;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 0;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .upload-btn:hover {
+            background: #C41E11;
+        }
+
+        .upload-icon {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        /* File List Container */
+        .file-list-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 48px 40px 48px;
+        }
+
+        /* Table Header */
+        .table-header {
+            display: grid;
+            grid-template-columns: 480px 120px 180px 1fr;
+            padding: 14px 20px;
+            border-bottom: 1px solid #E8E8E8;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: #7A7A7A;
+        }
+
+        .header-actions {
+            text-align: right;
+        }
+
+        /* File Row */
+        .file-row {
+            display: grid;
+            grid-template-columns: 480px 120px 180px 1fr;
+            padding: 20px;
+            border-bottom: 1px solid #E8E8E8;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .file-row:hover {
+            background: #FAFAFA;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .file-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .file-icon.folder {
+            color: #E42313;
+        }
+
+        .file-icon.file {
+            color: #0D0D0D;
+        }
+
+        .file-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            color: #0D0D0D;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .file-name:hover {
+            color: #E42313;
+        }
+
+        .file-size, .file-date {
+            font-size: 14px;
+            color: #7A7A7A;
+        }
+
+        .file-date {
+            color: #0D0D0D;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border: 1px solid #E8E8E8;
+            background: #FFFFFF;
+            border-radius: 0;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            color: #0D0D0D;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #0D0D0D;
+            color: #FFFFFF;
+            border-color: #0D0D0D;
+        }
+
+        .action-btn .icon {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 20px;
+            color: #7A7A7A;
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            color: #D0D0D0;
+            margin-bottom: 16px;
+        }
+
+        .empty-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #0D0D0D;
+            color: #FFFFFF;
+            padding: 12px 20px;
+            border-radius: 0;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #E8E8E8;
+            border-top-color: #E42313;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 200px;
+            }
+
+            .top-bar {
+                padding: 24px 32px;
+            }
+
+            .file-list-container {
+                padding: 0 32px 24px 32px;
+            }
+
+            .search-box {
+                width: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .top-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .table-header {
+                display: none;
+            }
+
+            .file-row {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .file-size, .file-date {
+                padding-left: 34px;
+            }
+
+            .file-actions {
+                justify-content: flex-start;
+                padding-left: 34px;
+            }
+        }
+
+        /* Icon Font Support */
+        .icon-font {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-mark"></div>
+            <span class="logo-text">UPFTP</span>
+        </div>
+
+        <nav class="nav-section">
+            <a href="/" class="nav-item active">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span class="nav-text">所有文件</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                <span class="nav-text">共享</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <span class="nav-text">收藏夹</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span class="nav-text">回收站</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="left-section">
+                <div class="breadcrumb">
+                    <span class="breadcrumb-item" onclick="navigateTo('/')">文件</span>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item active" id="currentPath">项目文档</span>
+                </div>
+                <h1 class="page-title" id="pageTitle">项目文档</h1>
+            </div>
+
+            <div class="right-section">
+                <div class="search-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" class="search-input" placeholder="搜索文件..." id="searchInput" oninput="handleSearch(this.value)">
+                </div>
+
+                <button class="upload-btn" onclick="handleUpload()">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    上传文件
+                </button>
+            </div>
+        </div>
+
+        <!-- File List -->
+        <div class="file-list-container" id="fileListContainer">
+            <!-- Table Header -->
+            <div class="table-header">
+                <div>文件名</div>
+                <div>大小</div>
+                <div>修改时间</div>
+                <div class="header-actions">操作</div>
+            </div>
+
+            <!-- File List will be inserted here by JavaScript -->
+            <div id="fileList"></div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">链接已复制到剪贴板</div>
+
+    <script>
+        // File type icons mapping
+        const fileTypeIcons = {
+            folder: '<svg class="file-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>',
+            pdf: '<svg class="file-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
+            image: '<svg class="file-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>',
+            archive: '<svg class="file-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>',
+            document: '<svg class="file-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>',
+            video: '<svg class="file-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>',
+            audio: '<svg class="file-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>',
+            default: '<svg class="file-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>'
+        };
+
+        // Get file icon based on file type
+        function getFileIcon(filename, isDir) {
+            if (isDir) return fileTypeIcons.folder;
+            
+            const ext = filename.split('.').pop().toLowerCase();
+            const iconMap = {
+                'pdf': fileTypeIcons.pdf,
+                'jpg': fileTypeIcons.image, 'jpeg': fileTypeIcons.image, 'png': fileTypeIcons.image, 'gif': fileTypeIcons.image, 'svg': fileTypeIcons.image,
+                'zip': fileTypeIcons.archive, 'rar': fileTypeIcons.archive, '7z': fileTypeIcons.archive, 'tar': fileTypeIcons.archive, 'gz': fileTypeIcons.archive,
+                'doc': fileTypeIcons.document, 'docx': fileTypeIcons.document, 'txt': fileTypeIcons.document, 'md': fileTypeIcons.document,
+                'mp4': fileTypeIcons.video, 'avi': fileTypeIcons.video, 'mov': fileTypeIcons.video, 'mkv': fileTypeIcons.video,
+                'mp3': fileTypeIcons.audio, 'wav': fileTypeIcons.audio, 'flac': fileTypeIcons.audio
+            };
+            
+            return iconMap[ext] || fileTypeIcons.default;
+        }
+
+        // Render file list
+        function renderFileList(files) {
+            const fileList = document.getElementById('fileList');
+            
+            if (files.length === 0) {
+                fileList.innerHTML = `
+                    <div class="empty-state">
+                        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <p class="empty-text">此文件夹为空</p>
+                    </div>
+                `;
+                return;
+            }
+
+            fileList.innerHTML = files.map(file => `
+                <div class="file-row">
+                    <div class="file-info">
+                        ${getFileIcon(file.Name, file.IsDir)}
+                        <span class="file-name" onclick="${file.IsDir ? `navigateTo('${file.Path}')` : `handleFileClick('${file.Path}', '${file.Name}')`}">${file.Name}</span>
+                    </div>
+                    <div class="file-size">${file.Size || '—'}</div>
+                    <div class="file-date">${file.ModTime}</div>
+                    <div class="file-actions">
+                        <button class="action-btn" onclick="copyDownloadLink('${file.Path}', '${file.Name}')">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                            </svg>
+                            复制链接
+                        </button>
+                        ${!file.IsDir ? `
+                        <button class="action-btn" onclick="downloadFile('${file.Path}', '${file.Name}')">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            下载
+                        </button>
+                        ` : ''}
+                        ${!file.IsDir && file.CanPreview ? `
+                        <button class="action-btn" onclick="previewFile('${file.Path}')">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            预览
+                        </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Copy download link
+        async function copyDownloadLink(path, filename) {
+            const link = `${window.location.origin}/download/${path}`;
+            
+            try {
+                await navigator.clipboard.writeText(link);
+                showToast('链接已复制到剪贴板');
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = link;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('链接已复制到剪贴板');
+            }
+        }
+
+        // Download file
+        function downloadFile(path, filename) {
+            const link = document.createElement('a');
+            link.href = `/download/${path}`;
+            link.download = filename;
+            link.click();
+        }
+
+        // Preview file
+        function previewFile(path) {
+            window.open(`/preview/${path}`, '_blank');
+        }
+
+        // Navigate to folder
+        function navigateTo(path) {
+            window.location.href = path;
+        }
+
+        // Handle file click
+        function handleFileClick(path, filename) {
+            // Download file on click
+            downloadFile(path, filename);
+        }
+
+        // Handle upload
+        function handleUpload() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.onchange = async (e) => {
+                const files = Array.from(e.target.files);
+                const formData = new FormData();
+                formData.append('path', window.currentPath || '/');
+                files.forEach(file => formData.append('files', file));
+
+                try {
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        showToast(`成功上传 ${files.length} 个文件`);
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showToast('上传失败');
+                    }
+                } catch (error) {
+                    showToast('上传失败');
+                }
+            };
+            input.click();
+        }
+
+        // Handle search
+        function handleSearch(query) {
+            const fileRows = document.querySelectorAll('.file-row');
+            fileRows.forEach(row => {
+                const fileName = row.querySelector('.file-name').textContent.toLowerCase();
+                row.style.display = fileName.includes(query.toLowerCase()) ? 'grid' : 'none';
+            });
+        }
+
+        // Show toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize with file data from template
+        document.addEventListener('DOMContentLoaded', () => {
+            const files = {{.Files | json}};
+            const currentPath = {{.CurrentPath}};
+            
+            document.getElementById('currentPath').textContent = currentPath === '/' ? '根目录' : currentPath.split('/').pop();
+            document.getElementById('pageTitle').textContent = currentPath === '/' ? '所有文件' : currentPath.split('/').pop();
+            
+            renderFileList(files);
+        });
+    </script>
+</body>
+</html>
