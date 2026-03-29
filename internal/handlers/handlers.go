@@ -17,9 +17,9 @@ import (
 	"strings"
 
 	"github.com/skip2/go-qrcode"
-	"github.com/zy84338719/upftp/internal/config"
-	"github.com/zy84338719/upftp/internal/filehandler"
-	"github.com/zy84338719/upftp/internal/logger"
+	"github.com/zy84338719/upftp/v2/internal/config"
+	"github.com/zy84338719/upftp/v2/internal/filehandler"
+	"github.com/zy84338719/upftp/v2/internal/logger"
 )
 
 //go:embed templates/*
