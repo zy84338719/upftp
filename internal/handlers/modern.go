@@ -8,8 +8,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/zy84338719/upftp/v2/internal/config"
-	"github.com/zy84338719/upftp/v2/internal/filehandler"
+	"github.com/zy84338719/upftp/internal/config"
+	"github.com/zy84338719/upftp/internal/filehandler"
 )
 
 // handleModernIndex 处理新的现代化页面

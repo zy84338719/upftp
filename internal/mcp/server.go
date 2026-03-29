@@ -16,10 +16,10 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	mcpserver "github.com/mark3labs/mcp-go/server"
-	"github.com/zy84338719/upftp/v2/internal/config"
-	"github.com/zy84338719/upftp/v2/internal/filehandler"
-	"github.com/zy84338719/upftp/v2/internal/logger"
-	"github.com/zy84338719/upftp/v2/internal/server"
+	"github.com/zy84338719/upftp/internal/config"
+	"github.com/zy84338719/upftp/internal/filehandler"
+	"github.com/zy84338719/upftp/internal/logger"
+	"github.com/zy84338719/upftp/internal/server"
 )
 
 type MCPServer struct {
