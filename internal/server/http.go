@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/zy84338719/upftp/v2/internal/config"
-	"github.com/zy84338719/upftp/v2/internal/handlers"
-	"github.com/zy84338719/upftp/v2/internal/logger"
+	"github.com/zy84338719/upftp/internal/config"
+	"github.com/zy84338719/upftp/internal/handlers"
+	"github.com/zy84338719/upftp/internal/logger"
 )
 
 type HTTPServer struct {

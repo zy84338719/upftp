@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zy84338719/upftp/v2/internal/logger"
+	"github.com/zy84338719/upftp/internal/logger"
 )
 
 type FTPServer struct {
