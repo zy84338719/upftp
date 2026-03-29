@@ -7,12 +7,12 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/zy84338719/upftp/v2/internal/cli"
-	"github.com/zy84338719/upftp/v2/internal/config"
-	"github.com/zy84338719/upftp/v2/internal/logger"
-	"github.com/zy84338719/upftp/v2/internal/mcp"
-	"github.com/zy84338719/upftp/v2/internal/network"
-	"github.com/zy84338719/upftp/v2/internal/server"
+	"github.com/zy84338719/upftp/internal/cli"
+	"github.com/zy84338719/upftp/internal/config"
+	"github.com/zy84338719/upftp/internal/logger"
+	"github.com/zy84338719/upftp/internal/mcp"
+	"github.com/zy84338719/upftp/internal/network"
+	"github.com/zy84338719/upftp/internal/server"
 )
 
 var (
