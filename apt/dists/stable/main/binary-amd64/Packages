@@ -1,14 +1,14 @@
 Package: upftp
-Version: 2.3.5
-Architecture: i386
+Version: 2.3.6
+Architecture: amd64
 Maintainer: Zhang Yi <zy84338719@gmail.com>
-Installed-Size: 9433
+Installed-Size: 10005
 Recommends: systemd
-Filename: pool/main/u/upftp/upftp_2.3.5_i386.deb
-Size: 3940236
-MD5sum: 9f64045d5f603e0ee1ea038bff463985
-SHA1: adead53f92c165ff6d34c1676e3a77064722c195
-SHA256: e945de7f1243dae638f26381e362c67562e573c2ed9d43182505750b87af76c7
+Filename: pool/main/u/upftp/upftp_2.3.6_amd64.deb
+Size: 4140032
+MD5sum: 294901687ea4ecef2e595738540b334c
+SHA1: ac8dfdce82981b9bea5ae1226690f99ea7f31259
+SHA256: 1fa9593eb1a29149701716a5e27e0c14c6bb45d9443b46c4ff1a1de2b6e8878a
 Section: net
 Priority: optional
 Homepage: https://github.com/zy84338719/upftp
