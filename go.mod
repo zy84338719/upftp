@@ -1,4 +1,4 @@
-module github.com/zy84338719/upftp/v2
+module github.com/zy84338719/upftp
 
 go 1.24.0
 
