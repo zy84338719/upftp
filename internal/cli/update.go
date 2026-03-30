@@ -6,7 +6,7 @@ import (
 	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/zy84338719/upftp/internal/config"
+	"github.com/zy84338719/upftp/internal/conf"
 )
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -71,7 +71,7 @@ func (m Model) handleMainKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.enterView(ViewExamples)
 		return m, nil
 	case "4":
-		m.fileMap = scanDirectory(config.AppConfig.Root, m.serverIP)
+		m.fileMap = scanDirectory(conf.AppConfig.Root, m.serverIP)
 		m.message = greenStyle.Render(fmt.Sprintf(t(m.lang, "refresh_done"), len(m.fileMap)))
 		return m, nil
 	case "5":
@@ -83,7 +83,7 @@ func (m Model) handleMainKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.prevView = ViewMain
 		return m, nil
 	case "7":
-		if config.AppConfig.EnableFTP {
+		if conf.AppConfig.EnableFTP {
 			m.enterView(ViewFTPInfo)
 		} else {
 			m.enterView(ViewAbout)
@@ -101,8 +101,8 @@ func (m Model) handleMainKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		} else {
 			m.lang = "en"
 		}
-		config.AppConfig.Language = m.lang
-		_ = config.SaveConfig()
+		conf.AppConfig.Language = m.lang
+		_ = conf.SaveConfig()
 		return m, nil
 	case "q":
 		*m.quitFlag = true
@@ -222,7 +222,7 @@ func (m Model) handleConfigFTPKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		val := strings.TrimSpace(m.input.Value())
 		if m.configStep == 0 {
 			if val != "" {
-				config.AppConfig.Username = val
+				conf.AppConfig.Username = val
 				m.message = greenStyle.Render("username → " + val)
 			}
 			m.enterConfigStep(1)
@@ -230,7 +230,7 @@ func (m Model) handleConfigFTPKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if val != "" {
-			config.AppConfig.Password = val
+			conf.AppConfig.Password = val
 			m.message = greenStyle.Render("password updated")
 		}
 		m.inputActive = false
@@ -259,13 +259,13 @@ func (m Model) handleConfigHTTPKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.configStep == 0 {
 		switch strings.ToLower(msg.String()) {
 		case "y":
-			config.AppConfig.HTTPAuth.Enabled = true
+			conf.AppConfig.HTTPAuth.Enabled = true
 			m.message = greenStyle.Render("http auth enabled")
 			m.enterConfigStep(1)
 			m.input.Placeholder = "username"
 			return m, nil
 		case "n":
-			config.AppConfig.HTTPAuth.Enabled = false
+			conf.AppConfig.HTTPAuth.Enabled = false
 			m.message = greenStyle.Render("http auth disabled")
 			m.view = ViewConfigMenu
 			m.prevView = ViewMain
@@ -289,7 +289,7 @@ func (m Model) handleConfigHTTPKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		val := strings.TrimSpace(m.input.Value())
 		if m.configStep == 1 {
 			if val != "" {
-				config.AppConfig.HTTPAuth.Username = val
+				conf.AppConfig.HTTPAuth.Username = val
 				m.message = greenStyle.Render("username → " + val)
 			}
 			m.enterConfigStep(2)
@@ -297,7 +297,7 @@ func (m Model) handleConfigHTTPKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if val != "" {
-			config.AppConfig.HTTPAuth.Password = val
+			conf.AppConfig.HTTPAuth.Password = val
 			m.message = greenStyle.Render("password updated")
 		}
 		m.inputActive = false
@@ -325,8 +325,8 @@ func (m Model) handleConfigHTTPKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) handleConfigFTPToggleKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch strings.ToLower(msg.String()) {
 	case "y":
-		config.AppConfig.EnableFTP = !config.AppConfig.EnableFTP
-		m.message = greenStyle.Render("ftp server → " + fmt.Sprintf("%v", config.AppConfig.EnableFTP))
+		conf.AppConfig.EnableFTP = !conf.AppConfig.EnableFTP
+		m.message = greenStyle.Render("ftp server → " + fmt.Sprintf("%v", conf.AppConfig.EnableFTP))
 		m.view = ViewConfigMenu
 		m.prevView = ViewMain
 		return m, nil
@@ -342,8 +342,8 @@ func (m Model) handleConfigFTPToggleKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) handleConfigMCPToggleKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch strings.ToLower(msg.String()) {
 	case "y":
-		config.AppConfig.EnableMCP = !config.AppConfig.EnableMCP
-		m.message = greenStyle.Render("mcp server → " + fmt.Sprintf("%v", config.AppConfig.EnableMCP))
+		conf.AppConfig.EnableMCP = !conf.AppConfig.EnableMCP
+		m.message = greenStyle.Render("mcp server → " + fmt.Sprintf("%v", conf.AppConfig.EnableMCP))
 		m.view = ViewConfigMenu
 		m.prevView = ViewMain
 		return m, nil
@@ -366,7 +366,7 @@ func (m Model) handleConfigPortsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		val := strings.TrimSpace(m.input.Value())
 		if m.configStep == 0 {
 			if val != "" {
-				config.AppConfig.Port = ":" + val
+				conf.AppConfig.Port = ":" + val
 				m.message = greenStyle.Render("http port → " + val)
 			}
 			m.enterConfigStep(1)
@@ -374,7 +374,7 @@ func (m Model) handleConfigPortsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if val != "" {
-			config.AppConfig.FTPPort = ":" + val
+			conf.AppConfig.FTPPort = ":" + val
 			m.message = greenStyle.Render("ftp port → " + val)
 		}
 		m.inputActive = false
@@ -402,12 +402,12 @@ func (m Model) handleConfigPortsKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) handleConfigSaveKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch strings.ToLower(msg.String()) {
 	case "y":
-		if err := config.SaveConfig(); err != nil {
+		if err := conf.SaveConfig(); err != nil {
 			m.message = redStyle.Render("failed: " + err.Error())
 		} else {
-			currentPath := config.GetConfigPath()
+			currentPath := conf.GetConfigPath()
 			if currentPath == "defaults" {
-				currentPath = config.GetDefaultConfigPath()
+				currentPath = conf.GetDefaultConfigPath()
 			}
 			m.message = greenStyle.Render("saved → " + currentPath)
 		}

@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-// Session represents a user session
 type Session struct {
 	Token     string
 	Username  string
@@ -15,22 +14,36 @@ type Session struct {
 	ExpiresAt time.Time
 }
 
-// SessionManager manages user sessions
 type SessionManager struct {
 	sessions map[string]*Session
 	mu       sync.RWMutex
 	duration time.Duration
+	stopCh   chan struct{}
 }
 
-// NewSessionManager creates a new session manager
 func NewSessionManager() *SessionManager {
-	return &SessionManager{
+	sm := &SessionManager{
 		sessions: make(map[string]*Session),
-		duration: 24 * time.Hour, // 24 hours expiry
+		duration: 24 * time.Hour,
+		stopCh:   make(chan struct{}),
+	}
+	go sm.cleanupLoop()
+	return sm
+}
+
+func (sm *SessionManager) cleanupLoop() {
+	ticker := time.NewTicker(10 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			sm.cleanupExpiredSessions()
+		case <-sm.stopCh:
+			return
+		}
 	}
 }
 
-// CreateSession creates a new session for the given username
 func (sm *SessionManager) CreateSession(username string) (*Session, error) {
 	token := generateToken()
 	session := &Session{
@@ -44,13 +57,9 @@ func (sm *SessionManager) CreateSession(username string) (*Session, error) {
 	sm.sessions[token] = session
 	sm.mu.Unlock()
 
-	// Clean up expired sessions periodically
-	go sm.cleanupExpiredSessions()
-
 	return session, nil
 }
 
-// ValidateSession validates a session token and returns the session if valid
 func (sm *SessionManager) ValidateSession(token string) (*Session, bool) {
 	sm.mu.RLock()
 	session, exists := sm.sessions[token]
@@ -60,7 +69,6 @@ func (sm *SessionManager) ValidateSession(token string) (*Session, bool) {
 		return nil, false
 	}
 
-	// Check if session has expired
 	if time.Now().After(session.ExpiresAt) {
 		sm.DeleteSession(token)
 		return nil, false
@@ -69,14 +77,12 @@ func (sm *SessionManager) ValidateSession(token string) (*Session, bool) {
 	return session, true
 }
 
-// DeleteSession removes a session
 func (sm *SessionManager) DeleteSession(token string) {
 	sm.mu.Lock()
 	delete(sm.sessions, token)
 	sm.mu.Unlock()
 }
 
-// GetSessionCount returns the number of active sessions
 func (sm *SessionManager) GetSessionCount() int {
 	sm.mu.RLock()
 	count := len(sm.sessions)
@@ -84,7 +90,6 @@ func (sm *SessionManager) GetSessionCount() int {
 	return count
 }
 
-// cleanupExpiredSessions removes all expired sessions
 func (sm *SessionManager) cleanupExpiredSessions() {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
@@ -97,19 +102,20 @@ func (sm *SessionManager) cleanupExpiredSessions() {
 	}
 }
 
-// generateToken generates a secure random token
 func generateToken() string {
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
-		// Fallback to timestamp-based token if crypto/rand fails
-		return hex.EncodeToString([]byte(time.Now().String()))
+		panic("crypto/rand failed: " + err.Error())
 	}
 	return hex.EncodeToString(bytes)
 }
 
-// SetSessionDuration allows customization of session duration
 func (sm *SessionManager) SetSessionDuration(duration time.Duration) {
 	sm.mu.Lock()
 	sm.duration = duration
 	sm.mu.Unlock()
+}
+
+func (sm *SessionManager) Stop() {
+	close(sm.stopCh)
 }

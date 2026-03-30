@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zy84338719/upftp/internal/config"
+	"github.com/zy84338719/upftp/internal/conf"
 )
 
 func (m Model) renderBanner() string {
@@ -15,12 +15,12 @@ func (m Model) renderBanner() string {
 	b.WriteString("  ")
 	b.WriteString(titleStyle.Render("~ upftp"))
 	b.WriteString(" ")
-	b.WriteString(valueStyle.Render("v" + config.AppConfig.Version))
+	b.WriteString(valueStyle.Render("v" + conf.AppConfig.Version))
 	b.WriteString("  ")
 	b.WriteString(dimStyle.Render(t(lang, "tagline")))
 	b.WriteString("\n")
 	b.WriteString("  ")
-	b.WriteString(dimStyle.Render(t(lang, "build") + ": " + config.AppConfig.LastCommit + " @ " + config.AppConfig.BuildDate))
+	b.WriteString(dimStyle.Render(t(lang, "build") + ": " + conf.AppConfig.LastCommit + " @ " + conf.AppConfig.BuildDate))
 	b.WriteString("\n\n")
 	b.WriteString("  ")
 	b.WriteString(separator(w))
@@ -29,21 +29,21 @@ func (m Model) renderBanner() string {
 	b.WriteString("  ")
 	b.WriteString(dimStyle.Render(fmt.Sprintf(" %-14s", t(lang, "http_server")+":")))
 	b.WriteString(" ")
-	b.WriteString(greenStyle.Render("http://" + m.serverIP + config.AppConfig.Port))
+	b.WriteString(greenStyle.Render("http://" + m.serverIP + conf.AppConfig.Port))
 	b.WriteString("\n")
 
-	if config.AppConfig.EnableFTP {
+	if conf.AppConfig.EnableFTP {
 		b.WriteString("  ")
 		b.WriteString(dimStyle.Render(fmt.Sprintf(" %-14s", t(lang, "ftp_server")+":")))
 		b.WriteString(" ")
-		b.WriteString(greenStyle.Render("ftp://" + m.serverIP + config.AppConfig.FTPPort))
+		b.WriteString(greenStyle.Render("ftp://" + m.serverIP + conf.AppConfig.FTPPort))
 		b.WriteString("\n")
 	}
 
 	b.WriteString("  ")
 	b.WriteString(dimStyle.Render(fmt.Sprintf(" %-14s", t(lang, "shared_path")+":")))
 	b.WriteString(" ")
-	b.WriteString(truncatePath(config.AppConfig.Root, 47))
+	b.WriteString(truncatePath(conf.AppConfig.Root, 47))
 	b.WriteString("\n")
 
 	b.WriteString("  ")
@@ -77,7 +77,7 @@ func (m Model) renderBanner() string {
 	b.WriteString(t(lang, "qr_access"))
 	b.WriteString("\n")
 
-	if config.AppConfig.Upload.Enabled {
+	if conf.AppConfig.Upload.Enabled {
 		b.WriteString("    ")
 		b.WriteString(yellowStyle.Render("●"))
 		b.WriteString(" ")
@@ -102,13 +102,13 @@ func (m Model) renderCompactHeader() string {
 	b.WriteString("  ")
 	b.WriteString(titleStyle.Render("~ upftp"))
 	b.WriteString(" ")
-	b.WriteString(dimStyle.Render("v" + config.AppConfig.Version))
+	b.WriteString(dimStyle.Render("v" + conf.AppConfig.Version))
 	b.WriteString("    ")
-	b.WriteString(greenStyle.Render("http://" + m.serverIP + config.AppConfig.Port))
+	b.WriteString(greenStyle.Render("http://" + m.serverIP + conf.AppConfig.Port))
 	b.WriteString(" ")
 	b.WriteString(dimStyle.Render("|"))
 	b.WriteString(" ")
-	b.WriteString(truncatePath(config.AppConfig.Root, 30))
+	b.WriteString(truncatePath(conf.AppConfig.Root, 30))
 	b.WriteString(" ")
 	b.WriteString(dimStyle.Render("|"))
 	b.WriteString(" ")
@@ -139,7 +139,7 @@ func (m Model) renderMenu() string {
 	rows = append(rows, row2)
 
 	var row3 string
-	if config.AppConfig.EnableFTP {
+	if conf.AppConfig.EnableFTP {
 		row3 = "  " + keyStyle.Render("[7]") + " " + t(lang, "ftp_info")
 		row3 += "  " + keyStyle.Render("[8]") + " " + t(lang, "about")
 	} else {

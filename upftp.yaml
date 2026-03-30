@@ -1,0 +1,27 @@
+# UPFTP Configuration File
+# https://github.com/zy84338719/upftp
+
+port: :10000
+ftp_port: :2121
+root: ./
+auto_select: false
+enable_ftp: false
+enable_mcp: false
+username: admin
+password: admin
+language: zh
+http_auth:
+    enabled: false
+    username: ""
+    password: ""
+https:
+    enabled: false
+    cert_file: ""
+    key_file: ""
+logging:
+    level: info
+    format: text
+upload:
+    enabled: true
+    max_size: 104857600
+    allow_types: ""
