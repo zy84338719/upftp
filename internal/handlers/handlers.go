@@ -53,9 +53,6 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/login", HandleLogin)
 	mux.HandleFunc("/logout", HandleLogout)
 
-	// 现代化页面路由（暂时公开，	mux.HandleFunc("/modern/", handleModernIndex)
-	mux.HandleFunc("/modern/*", handleModernIndex)
-
 	// 保护的 API 端点
 	mux.HandleFunc("/api/info", withAuth(HandleServerInfo))
 	mux.HandleFunc("/api/tree", withAuth(HandleDirectoryTree))
@@ -64,12 +61,13 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/create-folder", withAuth(handleCreateFolder))
 	mux.HandleFunc("/api/delete", withAuth(handleDelete))
 	mux.HandleFunc("/api/rename", withAuth(handleRename))
+	mux.HandleFunc("/api/files", withAuth(handleFileListAPI))
 
 	// 保护的文件访问
 	mux.HandleFunc("/files/", withAuth(handleFiles))
 
 	// 保护的主要路由
-	mux.HandleFunc("/", withAuth(handleIndex))
+	mux.HandleFunc("/", withAuth(handleModernIndex))
 	mux.HandleFunc("/download/", withAuth(handleDownload))
 	mux.HandleFunc("/preview/", withAuth(handlePreview))
 }
@@ -375,9 +373,12 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleQRCode(w http.ResponseWriter, r *http.Request) {
-	url := fmt.Sprintf("http://%s:%d", serverInfo.IP, serverInfo.HTTPPort)
+	target := r.URL.Query().Get("url")
+	if target == "" {
+		target = fmt.Sprintf("http://%s:%d", serverInfo.IP, serverInfo.HTTPPort)
+	}
 
-	png, err := qrcode.Encode(url, qrcode.Medium, 256)
+	png, err := qrcode.Encode(target, qrcode.Medium, 256)
 	if err != nil {
 		http.Error(w, "Failed to generate QR code", http.StatusInternalServerError)
 		return
@@ -570,4 +571,54 @@ func buildDirectoryTree(rootPath string, relativePath string) (*TreeNode, error)
 	}
 
 	return node, nil
+}
+
+func handleFileListAPI(w http.ResponseWriter, r *http.Request) {
+	urlPath := r.URL.Query().Get("path")
+	if urlPath == "" {
+		urlPath = "/"
+	}
+
+	fsPath := path.Join(config.AppConfig.Root, urlPath)
+	fileInfo, err := os.Stat(fsPath)
+	if err != nil || !fileInfo.IsDir() {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "not found"})
+		return
+	}
+
+	files, _ := ioutil.ReadDir(fsPath)
+	fileList := []filehandler.FileInfo{}
+
+	if urlPath != "/" {
+		fileList = append(fileList, filehandler.FileInfo{
+			Name:  "..",
+			IsDir: true,
+			Path:  path.Dir(urlPath),
+			Icon:  "📁",
+		})
+	}
+
+	for _, file := range files {
+		filePath := path.Join(urlPath, file.Name())
+		fileType := filehandler.GetFileType(file.Name())
+
+		info := filehandler.FileInfo{
+			Name:       file.Name(),
+			Size:       filehandler.FormatFileSize(file.Size()),
+			ModTime:    file.ModTime().Format("2006-01-02 15:04:05"),
+			IsDir:      file.IsDir(),
+			CanPreview: !file.IsDir() && filehandler.CanPreviewFile(fileType),
+			FileType:   fileType,
+			Path:       filePath,
+			Icon:       getFileIcon(file.IsDir(), fileType),
+		}
+		fileList = append(fileList, info)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"files": fileList,
+		"path":  urlPath,
+	})
 }

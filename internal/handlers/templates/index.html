@@ -3,1121 +3,498 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UPFTP - AI-First File Server</title>
+    <title>UPFTP - File Sharing</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            position: relative;
-        }
-        
-        .version-badge {
-            position: absolute;
-            top: 15px;
-            left: 20px;
-            background: rgba(255,255,255,0.2);
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.85em;
-            font-weight: 500;
-        }
-        
-        .language-selector {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            z-index: 100;
-        }
-        
-        .language-btn {
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-left: 8px;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .language-btn:hover {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-1px);
-        }
-        
-        .language-btn.active {
-            background: rgba(255,255,255,0.9);
-            color: #2c3e50;
-        }
-        
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 300;
-        }
-        
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1em;
-        }
-        
-        .features-bar {
-            background: rgba(0,0,0,0.1);
-            padding: 12px 20px;
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            flex-wrap: wrap;
-        }
-        
-        .feature-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.9em;
-        }
-        
-        .server-info {
-            background: #f8f9fa;
-            padding: 20px;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        .info-card {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #3498db;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .info-card.highlight {
-            border-left-color: #27ae60;
-            background: linear-gradient(to right, rgba(39, 174, 96, 0.05), white);
-        }
-        
-        .info-card h3 {
-            color: #2c3e50;
-            margin-bottom: 5px;
-            font-size: 0.85em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .info-card p {
-            color: #7f8c8d;
-            font-size: 1.05em;
-            font-weight: 500;
-        }
-        
-        .upload-section {
-            background: #e8f5e9;
-            padding: 15px 20px;
-            border-bottom: 1px solid #c8e6c9;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .upload-section.hidden {
-            display: none;
-        }
-        
-        .upload-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .upload-info span {
-            color: #2e7d32;
-            font-weight: 500;
-        }
-        
-        .upload-btn {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.95em;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .upload-btn:hover {
-            background: #219653;
-            transform: translateY(-1px);
-        }
-        
-        .qr-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .qr-btn {
-            background: rgba(255,255,255,0.9);
-            color: #2c3e50;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .qr-btn:hover {
-            background: white;
-        }
-        
-        .breadcrumb {
-            padding: 15px 20px;
-            background: #ecf0f1;
-            border-bottom: 1px solid #bdc3c7;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F8F9FA; color: #1a1a1a; display: flex; height: 100vh; overflow: hidden; }
 
-        .breadcrumb-path {
-            font-size: 1.1em;
-            color: #2c3e50;
-        }
+        .sidebar { width: 220px; background: #fff; border-right: 1px solid #e5e5e5; padding: 24px 16px; display: flex; flex-direction: column; gap: 24px; flex-shrink: 0; }
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo-mark { width: 28px; height: 28px; background: #D97706; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; border-radius: 6px; }
+        .logo-text { font-size: 16px; font-weight: 700; letter-spacing: -0.5px; }
+        .nav-section { display: flex; flex-direction: column; gap: 4px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; cursor: pointer; text-decoration: none; color: #666; font-size: 13px; font-weight: 500; transition: all .15s; }
+        .nav-item:hover { background: #f5f5f5; color: #333; }
+        .nav-item.active { background: #D97706; color: #fff; }
+        .lang-switch { margin-top: auto; display: flex; gap: 4px; background: #f0f0f0; border-radius: 6px; padding: 3px; }
+        .lang-btn { flex: 1; padding: 6px 0; text-align: center; border: none; background: transparent; font-size: 12px; font-weight: 600; border-radius: 4px; cursor: pointer; color: #999; transition: all .15s; }
+        .lang-btn.active { background: #fff; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
 
-        .breadcrumb-path a {
-            color: #3498db;
-            text-decoration: none;
-        }
+        .tree-section { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+        .tree-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #aaa; padding: 0 12px 8px; }
+        .tree-body { flex: 1; overflow-y: auto; overflow-x: hidden; }
+        .tree-body::-webkit-scrollbar { width: 4px; }
+        .tree-body::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+        .tree-node { display: flex; align-items: center; gap: 4px; padding: 4px 8px; cursor: pointer; font-size: 12px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background .1s; border-radius: 4px; margin: 1px 6px; }
+        .tree-node:hover { background: #f0f0f0; color: #222; }
+        .tree-node.active { background: #FEF3C7; color: #92400E; font-weight: 600; }
+        .tree-arrow { width: 14px; text-align: center; font-size: 9px; color: #bbb; flex-shrink: 0; transition: transform .15s; }
+        .tree-arrow.open { transform: rotate(90deg); }
+        .tree-icon { flex-shrink: 0; font-size: 14px; }
+        .tree-label { overflow: hidden; text-overflow: ellipsis; }
+        .tree-children { display: none; }
+        .tree-children.open { display: block; }
+        .tree-loading { padding: 8px 12px; font-size: 11px; color: #ccc; }
 
-        .breadcrumb-path a:hover {
-            text-decoration: underline;
-        }
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
-        .breadcrumb-actions {
-            display: flex;
-            gap: 10px;
-        }
+        .header { padding: 24px 32px; border-bottom: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; gap: 16px; background: #fff; flex-shrink: 0; }
+        .header-left { min-width: 0; }
+        .breadcrumb { font-size: 13px; color: #999; margin-bottom: 4px; }
+        .breadcrumb a { color: #999; text-decoration: none; }
+        .breadcrumb a:hover { color: #333; }
+        .page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        .header-right { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+        .search { padding: 8px 14px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; width: 260px; outline: none; transition: border .15s; }
+        .search:focus { border-color: #999; }
+        .btn-upload { display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #D97706; color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
+        .btn-upload:hover { background: #B45309; }
 
-        .action-btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85em;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+        .content { flex: 1; overflow-y: auto; background: #fff; }
+        .table-head { display: grid; grid-template-columns: 1fr 100px 160px 260px; padding: 10px 32px; border-bottom: 1px solid #eee; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #999; position: sticky; top: 0; background: #fff; z-index: 1; }
+        .file-row { display: grid; grid-template-columns: 1fr 100px 160px 260px; padding: 12px 32px; border-bottom: 1px solid #f5f5f5; align-items: center; font-size: 13px; transition: background .1s; }
+        .file-row:hover { background: #fafafa; }
+        .file-name-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .file-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .file-name { font-weight: 500; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-name:hover { color: #D97706; }
+        .file-size { color: #888; }
+        .file-date { color: #888; }
+        .file-actions { display: flex; gap: 6px; justify-content: flex-end; }
+        .act-btn { padding: 4px 10px; border: 1px solid #ddd; border-radius: 4px; background: #fff; font-size: 11px; font-weight: 500; cursor: pointer; transition: all .15s; color: #555; }
+        .act-btn:hover { background: #333; color: #fff; border-color: #333; }
 
-        .action-btn:hover {
-            background: #2980b9;
-        }
+        .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; color: #bbb; }
+        .empty svg { width: 48px; height: 48px; margin-bottom: 12px; }
+        .empty p { font-size: 14px; }
 
-        .action-btn.secondary {
-            background: #95a5a6;
-        }
+        /* Preview Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: #fff; border-radius: 12px; width: 90vw; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #eee; flex-shrink: 0; }
+        .modal-title { font-size: 15px; font-weight: 600; }
+        .modal-close { width: 32px; height: 32px; border: none; background: #f5f5f5; border-radius: 6px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+        .modal-close:hover { background: #e0e0e0; }
+        .modal-body { flex: 1; overflow: auto; padding: 20px; min-height: 200px; }
+        .modal-body pre { white-space: pre-wrap; word-break: break-all; font-family: 'SF Mono', 'Menlo', monospace; font-size: 13px; line-height: 1.6; color: #333; }
+        .modal-body img { max-width: 100%; max-height: 70vh; display: block; margin: 0 auto; }
+        .modal-body video, .modal-body audio { width: 100%; }
+        .modal-body .loading { text-align: center; padding: 40px; color: #bbb; }
+        .modal-body .error { text-align: center; padding: 40px; color: #D97706; }
 
-        .action-btn.secondary:hover {
-            background: #7f8c8d;
-        }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; display: none; z-index: 2000; }
+        .toast.show { display: block; }
 
-        .main-layout {
-            display: flex;
-            min-height: 500px;
-        }
-
-        .sidebar {
-            width: 280px;
-            background: #f8f9fa;
-            border-right: 1px solid #e9ecef;
-            overflow-y: auto;
-            flex-shrink: 0;
-        }
-
-        .sidebar-header {
-            padding: 15px;
-            background: #ecf0f1;
-            border-bottom: 1px solid #e9ecef;
-            font-weight: 600;
-            color: #2c3e50;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .tree-view {
-            padding: 10px;
-        }
-
-        .tree-node {
-            margin-left: 0;
-        }
-
-        .tree-content {
-            display: flex;
-            align-items: center;
-            padding: 6px 8px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: background 0.2s ease;
-            margin-bottom: 2px;
-        }
-
-        .tree-content:hover {
-            background: #e9ecef;
-        }
-
-        .tree-content.selected {
-            background: #3498db;
-            color: white;
-        }
-
-        .tree-toggle {
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 5px;
-            font-size: 0.8em;
-            color: #95a5a6;
-            transition: transform 0.2s ease;
-        }
-
-        .tree-toggle.expanded {
-            transform: rotate(90deg);
-        }
-
-        .tree-toggle.leaf {
-            visibility: hidden;
-        }
-
-        .tree-icon {
-            margin-right: 8px;
-            font-size: 1.1em;
-        }
-
-        .tree-name {
-            flex: 1;
-            font-size: 0.9em;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .tree-children {
-            display: none;
-        }
-
-        .tree-children.show {
-            display: block;
-        }
-
-        .file-list {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        
-        .search-bar {
-            margin-bottom: 20px;
-            position: relative;
-        }
-        
-        .search-input {
-            width: 100%;
-            padding: 12px 20px 12px 45px;
-            border: 2px solid #e9ecef;
-            border-radius: 25px;
-            font-size: 16px;
-            background: #f8f9fa;
-            transition: all 0.3s ease;
-        }
-        
-        .search-input:focus {
-            outline: none;
-            border-color: #3498db;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-        }
-        
-        .search-icon {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #7f8c8d;
-            font-size: 18px;
-        }
-        
-        .file-grid {
-            display: grid;
-            gap: 15px;
-        }
-        
-        .file-item {
-            background: white;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 15px 20px;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .file-item:hover {
-            border-color: #3498db;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-        }
-        
-        .file-info {
-            display: flex;
-            align-items: center;
-            flex-grow: 1;
-        }
-        
-        .file-icon {
-            font-size: 2em;
-            margin-right: 15px;
-            min-width: 40px;
-        }
-        
-        .file-details h3 {
-            color: #2c3e50;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-        
-        .file-details p {
-            color: #7f8c8d;
-            font-size: 0.85em;
-        }
-        
-        .file-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        
-        .btn {
-            padding: 6px 14px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 0.85em;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .btn-primary {
-            background: #3498db;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #2980b9;
-        }
-        
-        .btn-success {
-            background: #27ae60;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #229954;
-        }
-        
-        .btn-warning {
-            background: #f39c12;
-            color: white;
-        }
-        
-        .btn-warning:hover {
-            background: #e67e22;
-        }
-        
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.8);
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .modal-content {
-            position: fixed;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 0;
-            border-radius: 12px;
-            max-width: 90vw;
-            max-height: 90vh;
-            overflow: hidden;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-        }
-
-        .modal-content.large {
-            width: 800px;
-        }
-        
-        .modal-header {
-            background: #2c3e50;
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .modal-body {
-            padding: 20px;
-            max-height: 70vh;
-            overflow: auto;
-        }
-        
-        .close-button {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: background 0.3s ease;
-        }
-        
-        .close-button:hover {
-            background: rgba(255,255,255,0.2);
-        }
-        
-        .preview-image {
-            max-width: 100%;
-            max-height: 70vh;
-            object-fit: contain;
-        }
-        
-        .preview-video {
-            max-width: 100%;
-            max-height: 70vh;
-        }
-        
-        .preview-audio {
-            width: 100%;
-        }
-        
-        .preview-text {
-            white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            max-height: 60vh;
-            overflow: auto;
-            line-height: 1.5;
-            font-size: 0.9em;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #7f8c8d;
-        }
-        
-        .empty-state .icon {
-            font-size: 4em;
-            margin-bottom: 20px;
-        }
-        
-        .empty-state h3 {
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
-
-        .upload-area {
-            border: 2px dashed #3498db;
-            border-radius: 8px;
-            padding: 40px;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .upload-area:hover, .upload-area.dragover {
-            border-color: #27ae60;
-            background: rgba(39, 174, 96, 0.05);
-        }
-
-        .upload-area input[type="file"] {
-            display: none;
-        }
-
-        .upload-area p {
-            margin: 10px 0;
-            color: #7f8c8d;
-        }
-
-        .upload-area .upload-icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-        }
-        
         @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 8px;
-            }
-            
-            .header {
-                padding: 20px;
-            }
-            
-            .header h1 {
-                font-size: 1.8em;
-            }
-
-            .version-badge {
-                display: none;
-            }
-            
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .file-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-            
-            .file-actions {
-                width: 100%;
-                justify-content: flex-start;
-                flex-wrap: wrap;
-            }
-
-            .features-bar {
-                gap: 15px;
-            }
-
-            .upload-section {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .sidebar {
-                display: none;
-            }
+            .sidebar { display: none; }
+            .table-head { display: none; }
+            .file-row { grid-template-columns: 1fr auto; }
+            .file-size, .file-date { display: none; }
+            .header { flex-direction: column; align-items: stretch; }
+            .header-right { flex-direction: column; }
+            .search { width: 100%; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-mark">U</div>
+            <span class="logo-text">UPFTP</span>
+        </div>
+        <nav class="nav-section">
+            <a href="javascript:navigateTo('/')" class="nav-item active" id="navFiles">
+                <span>&#128193;</span> <span data-i18n="all_files">All Files</span>
+            </a>
+        </nav>
+        <div class="tree-section">
+            <div class="tree-header">
+                <span data-i18n="explorer">EXPLORER</span>
+            </div>
+            <div class="tree-body" id="fileTree">
+                <div class="tree-loading">...</div>
+            </div>
+        </div>
+        <div class="lang-switch">
+            <button class="lang-btn active" id="langEN" onclick="setLang('en')">EN</button>
+            <button class="lang-btn" id="langZH" onclick="setLang('zh')">中文</button>
+        </div>
+    </aside>
+
+    <main class="main">
         <div class="header">
-            <div class="version-badge">{{.ProjectName}} v{{.Version}}</div>
-            <div class="language-selector">
-                <button class="language-btn" onclick="switchLanguage('en')" id="lang-en">🇺🇸 EN</button>
-                <button class="language-btn" onclick="switchLanguage('zh')" id="lang-zh">🇨🇳 中文</button>
+            <div class="header-left">
+                <div class="breadcrumb" id="breadcrumb"></div>
+                <h1 class="page-title" id="pageTitle">All Files</h1>
             </div>
-            <h1 data-en="🚀 UPFTP" data-zh="🚀 UPFTP">🚀 UPFTP</h1>
-            <p data-en="AI-First File Sharing Server" data-zh="AI 时代的文件共享服务器">AI-First File Sharing Server</p>
-            <p style="font-size: 0.85em; margin-top: 8px; opacity: 0.7;">
-                <a href="{{.ProjectURL}}" target="_blank" style="color: white; text-decoration: none;">{{.ProjectURL}}</a>
-            </p>
-        </div>
-
-        <div class="features-bar">
-            <div class="feature-item">🌐 <span data-en="Web Interface" data-zh="Web 界面">Web Interface</span></div>
-            <div class="feature-item">🤖 <span data-en="MCP Support" data-zh="MCP 支持">MCP Support</span></div>
-            <div class="feature-item">📤 <span data-en="File Upload" data-zh="文件上传">File Upload</span></div>
-            <div class="feature-item">📁 <span data-en="Directory Tree" data-zh="目录树">Directory Tree</span></div>
-            <div class="feature-item">👁️ <span data-en="File Preview" data-zh="文件预览">File Preview</span></div>
-        </div>
-        
-        {{if .ServerInfo}}
-        <div class="server-info">
-            <div class="info-grid">
-                <div class="info-card highlight">
-                    <h3 data-en="🌐 HTTP Server" data-zh="🌐 HTTP 服务器">🌐 HTTP Server</h3>
-                    <p>http://{{.ServerInfo.IP}}:{{.ServerInfo.HTTPPort}}</p>
-                </div>
-                {{if .ServerInfo.FTPPort}}
-                <div class="info-card">
-                    <h3 data-en="📁 FTP Server" data-zh="📁 FTP 服务器">📁 FTP Server</h3>
-                    <p>ftp://{{.ServerInfo.IP}}:{{.ServerInfo.FTPPort}}</p>
-                </div>
-                {{end}}
-                <div class="info-card">
-                    <h3 data-en="📂 Root Directory" data-zh="📂 根目录">📂 Root Directory</h3>
-                    <p>{{.ServerInfo.Root}}</p>
-                </div>
-                <div class="info-card">
-                    <h3 data-en="📄 Files" data-zh="📄 文件">📄 Files</h3>
-                    <p>{{len .Files}} <span data-en="items" data-zh="项">items</span></p>
-                </div>
-            </div>
-        </div>
-        {{end}}
-
-        {{if .UploadEnabled}}
-        <div class="upload-section">
-            <div class="upload-info">
-                <span>📤</span>
-                <span data-en="Upload files by dragging them to this page or" data-zh="拖拽文件到页面或">Upload files by dragging them to this page or</span>
-                <button class="upload-btn" onclick="showUploadModal()">
-                    <span>📁</span>
-                    <span data-en="Select Files" data-zh="选择文件">Select Files</span>
-                </button>
-            </div>
-            <div class="qr-section">
-                <button class="qr-btn" onclick="showQRCode()">
-                    <span>📱</span>
-                    <span data-en="QR Code" data-zh="二维码">QR Code</span>
+            <div class="header-right">
+                <input type="text" class="search" data-i18n-placeholder="search" placeholder="Search files..." id="searchInput" oninput="onSearch(this.value)">
+                <button class="btn-upload" onclick="doUpload()">
+                    &#8593; <span data-i18n="upload">Upload</span>
                 </button>
             </div>
         </div>
-        {{end}}
-        
-        <div class="breadcrumb">
-            <div class="breadcrumb-path">
-                📁 <span data-en="Current Path" data-zh="当前路径">Current Path</span>: <a href="/">/</a>{{.CurrentPath}}
+        <div class="content" id="content">
+            <div class="table-head">
+                <div data-i18n="name">Name</div>
+                <div data-i18n="size">Size</div>
+                <div data-i18n="modified">Modified</div>
+                <div style="text-align:right" data-i18n="actions">Actions</div>
             </div>
-            <div class="breadcrumb-actions">
-                <button class="action-btn secondary" onclick="refreshPage()">
-                    <span>🔄</span>
-                    <span data-en="Refresh" data-zh="刷新">Refresh</span>
-                </button>
-                <button class="action-btn" onclick="showUploadModal()">
-                    <span>📤</span>
-                    <span data-en="Upload" data-zh="上传">Upload</span>
-                </button>
-            </div>
+            <div id="fileListBody"></div>
         </div>
+    </main>
 
-        <div class="main-layout">
-            <div class="sidebar">
-                <div class="sidebar-header">
-                    <span data-en="📁 Directory Tree" data-zh="📁 目录树">📁 Directory Tree</span>
-                </div>
-                <div class="tree-view" id="treeView">
-                    <div id="treeContainer"></div>
-                </div>
-            </div>
-
-            <div class="file-list">
-                <div class="search-bar">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" id="searchInput" class="search-input"
-                           data-placeholder-en="Search files and folders..."
-                           data-placeholder-zh="搜索文件和文件夹..."
-                           placeholder="Search files and folders...">
-                </div>
-
-                <div class="file-grid" id="fileGrid">
-                    {{if .Files}}
-                        {{range .Files}}
-                        <div class="file-item" data-name="{{.Name}}" data-type="{{.FileTypeStr}}">
-                            <div class="file-info">
-                                <div class="file-icon">{{.Icon}}</div>
-                                <div class="file-details">
-                                    {{if .IsDir}}
-                                        <h3><a href="{{.Path}}" style="text-decoration: none; color: inherit;">{{.Name}}</a></h3>
-                                        <p data-en="Directory" data-zh="目录">Directory</p>
-                                    {{else}}
-                                        <h3>{{.Name}}</h3>
-                                        <p>{{.Size}} • {{.ModTime}} • {{.FileTypeStr}}</p>
-                                    {{end}}
-                                </div>
-                            </div>
-                            <div class="file-actions">
-                                {{if not .IsDir}}
-                                    {{if .CanPreview}}
-                                    <button class="btn btn-primary" onclick="showPreview('/preview/{{.Path}}', '{{.FileTypeStr}}', '{{.Name}}')">
-                                        👁️ <span data-en="Preview" data-zh="预览">Preview</span>
-                                    </button>
-                                    {{end}}
-                                {{end}}
-                                <a href="/download/{{.Path}}" class="btn btn-success">
-                                    💾 <span data-en="Download" data-zh="下载">Download</span>{{if .IsDir}} ZIP{{end}}
-                                </a>
-                            </div>
-                        </div>
-                        {{end}}
-                    {{else}}
-                        <div class="empty-state">
-                            <div class="icon">📂</div>
-                            <h3 data-en="No files found" data-zh="未找到文件">No files found</h3>
-                            <p data-en="This directory is empty or no files match your search." data-zh="此目录为空或没有文件匹配您的搜索。">This directory is empty or no files match your search.</p>
-                        </div>
-                    {{end}}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Preview Modal -->
-    <div id="previewModal" class="modal">
-        <div class="modal-content">
+    <div class="modal-overlay" id="previewModal" onclick="if(event.target===this)closePreview()">
+        <div class="modal">
             <div class="modal-header">
-                <h3 id="previewTitle">File Preview</h3>
-                <button class="close-button" onclick="hidePreview()">×</button>
+                <div class="modal-title" id="previewTitle">Preview</div>
+                <button class="modal-close" onclick="closePreview()">&times;</button>
             </div>
-            <div class="modal-body">
-                <div id="previewContent"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Upload Modal -->
-    <div id="uploadModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 data-en="📤 Upload Files" data-zh="📤 上传文件">📤 Upload Files</h3>
-                <button class="close-button" onclick="hideUploadModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">📤</div>
-                    <p data-en="Drag and drop files here" data-zh="拖拽文件到这里">Drag and drop files here</p>
-                    <p data-en="or click to select files" data-zh="或点击选择文件">or click to select files</p>
-                    <input type="file" id="fileInput" multiple>
-                </div>
-                <div id="uploadProgress" style="margin-top: 15px; display: none;">
-                    <p data-en="Uploading..." data-zh="上传中...">Uploading...</p>
-                    <progress id="uploadProgressBar" value="0" max="100" style="width: 100%;"></progress>
-                </div>
+            <div class="modal-body" id="previewBody">
+                <div class="loading">Loading...</div>
             </div>
         </div>
     </div>
 
-    <!-- QR Code Modal -->
-    <div id="qrModal" class="modal">
-        <div class="modal-content">
+    <div class="modal-overlay" id="qrModal" onclick="if(event.target===this)closeQR()">
+        <div class="modal" style="max-width:360px;">
             <div class="modal-header">
-                <h3 data-en="📱 QR Code" data-zh="📱 二维码">📱 QR Code</h3>
-                <button class="close-button" onclick="hideQRModal()">×</button>
+                <div class="modal-title" id="qrTitle">QR Download</div>
+                <button class="modal-close" onclick="closeQR()">&times;</button>
             </div>
-            <div class="modal-body" style="text-align: center;">
-                <img id="qrImage" src="" alt="QR Code" style="max-width: 256px;">
-                <p style="margin-top: 15px; color: #7f8c8d;" data-en="Scan to access from mobile" data-zh="扫码从移动设备访问">Scan to access from mobile</p>
+            <div class="modal-body" style="text-align:center;padding:24px;">
+                <img id="qrImage" src="" alt="QR" style="max-width:240px;margin:0 auto 16px;display:block;" />
+                <div id="qrLink" style="font-size:12px;color:#888;word-break:break-all;"></div>
             </div>
         </div>
     </div>
+
+    <div class="toast" id="toast"></div>
 
     <script>
-        let currentLanguage = 'en';
-        let currentPath = '{{.CurrentPath}}';
-        
-        function detectLanguage() {
-            const browserLang = navigator.language || navigator.userLanguage;
-            if (browserLang.startsWith('zh')) return 'zh';
-            return 'en';
-        }
-        
-        function switchLanguage(lang) {
-            currentLanguage = lang;
-            localStorage.setItem('preferred-language', lang);
-            
-            document.querySelectorAll('[data-en][data-zh]').forEach(element => {
-                element.textContent = lang === 'zh' ? element.getAttribute('data-zh') : element.getAttribute('data-en');
-            });
-            
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.placeholder = searchInput.getAttribute('data-placeholder-' + lang);
+    var LANG = {
+        en: { all_files:"All Files", name:"Name", size:"Size", modified:"Modified", actions:"Actions",
+              search:"Search files...", upload:"Upload", copy_link:"Copy Link", download:"Download",
+              preview:"Preview", empty:"This folder is empty", root:"Root", loading:"Loading...",
+              preview_err:"Preview not available", copied:"Link copied!", explorer:"EXPLORER",
+              qr_download:"QR Download", qr_title:"Scan to Download", zip_download:"ZIP Download" },
+        zh: { all_files:"所有文件", name:"文件名", size:"大小", modified:"修改时间", actions:"操作",
+              search:"搜索文件...", upload:"上传", copy_link:"复制链接", download:"下载",
+              preview:"预览", empty:"此文件夹为空", root:"根目录", loading:"加载中...",
+              preview_err:"无法预览此文件", copied:"链接已复制！", explorer:"文件树",
+              qr_download:"二维码下载", qr_title:"扫码下载", zip_download:"打包下载" }
+    };
+    var curLang = localStorage.getItem('upftp-lang') || 'en';
+    var allFiles = [];
+    var curPath = '/';
+    var treeData = null;
+
+    function T(k) { return (LANG[curLang] || LANG.en)[k] || k; }
+
+    function navigateTo(path) {
+        curPath = path;
+        window.history.pushState({path: path}, '', path === '/' ? '/' : path);
+        fetch('/api/files?path=' + encodeURIComponent(path)).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.files) {
+                allFiles = data.files;
+                curPath = data.path || path;
+                updateBreadcrumb();
+                render(allFiles);
+                updateTreeActive();
+                document.getElementById('searchInput').value = '';
             }
-            
-            document.querySelectorAll('.language-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('lang-' + lang).classList.add('active');
-            document.documentElement.lang = lang;
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedLang = localStorage.getItem('preferred-language') || detectLanguage();
-            switchLanguage(savedLang);
-            loadDirectoryTree();
-            setupDragDrop();
         });
+    }
 
-        function getLocalizedText(enText, zhText) {
-            return currentLanguage === 'zh' ? zhText : enText;
-        }
-
-        async function loadDirectoryTree() {
-            const treeContainer = document.getElementById('treeContainer');
-            if (!treeContainer) return;
-
-            try {
-                const response = await fetch('/api/tree');
-                if (!response.ok) throw new Error('Failed to load tree');
-                const tree = await response.json();
-                markPathForExpansion(tree, window.location.pathname);
-                treeContainer.innerHTML = renderTreeNode(tree, true);
-            } catch (error) {
-                treeContainer.innerHTML = `<div style="text-align: center; padding: 20px; color: #7f8c8d;">
-                    ${getLocalizedText('Failed to load directory tree', '加载目录树失败')}: ${error.message}
-                </div>`;
-            }
-        }
-
-        function markPathForExpansion(node, currentPath) {
-            if (!node || !currentPath || currentPath === '/') return;
-            const normalizedNodePath = node.path.endsWith('/') ? node.path.slice(0, -1) : node.path;
-            const normalizedCurrentPath = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath;
-
-            if (normalizedCurrentPath.startsWith(normalizedNodePath + '/') || normalizedCurrentPath === normalizedNodePath) {
-                node.expanded = true;
-                if (node.children) {
-                    for (const child of node.children) {
-                        markPathForExpansion(child, currentPath);
-                    }
-                }
-            }
-        }
-
-        function renderTreeNode(node, isRoot = false) {
-            const hasChildren = node.children && node.children.length > 0;
-            const toggleClass = hasChildren ? '' : 'leaf';
-            const expandedClass = node.expanded ? 'expanded' : '';
-            const showChildrenClass = node.expanded ? 'show' : '';
-            const icon = node.isDir ? '📁' : '📄';
-
-            return `
-                <div class="tree-node" style="padding-left: ${isRoot ? '0px' : '20px'}">
-                    <div class="tree-content" onclick="handleTreeNodeClick(this, '${node.path}', ${hasChildren})">
-                        <span class="tree-toggle ${toggleClass} ${expandedClass}">▶</span>
-                        <span class="tree-icon">${icon}</span>
-                        <span class="tree-name">${node.name === '/' ? getLocalizedText('Root', '根目录') : node.name}</span>
-                    </div>
-                    ${hasChildren ? `<div class="tree-children ${showChildrenClass}">${node.children.map(child => renderTreeNode(child)).join('')}</div>` : ''}
-                </div>
-            `;
-        }
-
-        function handleTreeNodeClick(contentElement, path, hasChildren) {
-            const toggle = contentElement.querySelector('.tree-toggle');
-            if (!hasChildren) {
-                window.location.href = path;
-                return;
-            }
-            toggle.classList.toggle('expanded');
-            const treeNode = contentElement.parentElement;
-            const children = treeNode.querySelector('.tree-children');
-            if (children) children.classList.toggle('show');
-        }
-        
-        const searchInput = document.getElementById('searchInput');
-        const fileGrid = document.getElementById('fileGrid');
-        const fileItems = fileGrid.querySelectorAll('.file-item');
-
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            fileItems.forEach(item => {
-                const fileName = item.dataset.name.toLowerCase();
-                const fileType = item.dataset.type.toLowerCase();
-                item.style.display = (fileName.includes(searchTerm) || fileType.includes(searchTerm)) ? 'flex' : 'none';
-            });
-        });
-
-        function showPreview(fileUrl, fileType, fileName) {
-            const modal = document.getElementById('previewModal');
-            const content = document.getElementById('previewContent');
-            const title = document.getElementById('previewTitle');
-            
-            title.textContent = fileName;
-            content.innerHTML = `<div style="text-align: center; padding: 40px;"><p>${getLocalizedText('Loading preview...', '加载预览中...')}</p></div>`;
-            modal.style.display = 'block';
-            
-            if (fileType === 'image') {
-                const img = document.createElement('img');
-                img.src = fileUrl;
-                img.className = 'preview-image';
-                img.onload = () => { content.innerHTML = ''; content.appendChild(img); };
-                img.onerror = () => { content.innerHTML = `<p>${getLocalizedText('Failed to load image preview.', '图片预览加载失败。')}</p>`; };
-            } else if (fileType === 'video') {
-                content.innerHTML = `<video src="${fileUrl}" class="preview-video" controls autoplay></video>`;
-            } else if (fileType === 'audio') {
-                content.innerHTML = `<audio src="${fileUrl}" class="preview-audio" controls autoplay></audio>`;
-            } else if (fileType === 'text' || fileType === 'code') {
-                fetch(fileUrl)
-                    .then(response => response.text())
-                    .then(text => {
-                        const pre = document.createElement('pre');
-                        pre.className = 'preview-text';
-                        pre.textContent = text;
-                        content.innerHTML = '';
-                        content.appendChild(pre);
-                    })
-                    .catch(() => { content.innerHTML = `<p>${getLocalizedText('Failed to load text preview.', '文本预览加载失败。')}</p>`; });
+    function updateTreeActive() {
+        var nodes = document.querySelectorAll('.tree-node');
+        for (var i = 0; i < nodes.length; i++) {
+            var p = nodes[i].getAttribute('data-path');
+            if (p === curPath) {
+                nodes[i].classList.add('active');
             } else {
-                content.innerHTML = `<p>${getLocalizedText('Preview not available for this file type.', '此文件类型不支持预览。')}</p>`;
+                nodes[i].classList.remove('active');
             }
         }
+    }
 
-        function hidePreview() { document.getElementById('previewModal').style.display = 'none'; }
-
-        function showUploadModal() { document.getElementById('uploadModal').style.display = 'block'; }
-        function hideUploadModal() { document.getElementById('uploadModal').style.display = 'none'; }
-
-        function showQRCode() {
-            document.getElementById('qrImage').src = '/api/qrcode';
-            document.getElementById('qrModal').style.display = 'block';
-        }
-        function hideQRModal() { document.getElementById('qrModal').style.display = 'none'; }
-
-        function refreshPage() { location.reload(); }
-
-        function setupDragDrop() {
-            const uploadArea = document.getElementById('uploadArea');
-            const fileInput = document.getElementById('fileInput');
-
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                document.body.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }, false);
-            });
-
-            document.body.addEventListener('dragover', () => showUploadModal());
-
-            uploadArea.addEventListener('click', () => fileInput.click());
-            
-            fileInput.addEventListener('change', (e) => uploadFiles(e.target.files));
-
-            uploadArea.addEventListener('drop', (e) => {
-                const files = e.dataTransfer.files;
-                uploadFiles(files);
-            });
-        }
-
-        async function uploadFiles(files) {
-            if (!files || files.length === 0) return;
-
-            const progress = document.getElementById('uploadProgress');
-            const progressBar = document.getElementById('uploadProgressBar');
-            progress.style.display = 'block';
-            progressBar.value = 0;
-
-            const formData = new FormData();
-            for (let i = 0; i < files.length; i++) {
-                formData.append('files', files[i]);
-            }
-            formData.append('path', currentPath);
-
-            try {
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert(getLocalizedText(`Successfully uploaded ${result.count} file(s)`, `成功上传 ${result.count} 个文件`));
-                    hideUploadModal();
-                    location.reload();
-                } else {
-                    alert(getLocalizedText('Upload failed: ', '上传失败: ') + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                alert(getLocalizedText('Upload failed: ', '上传失败: ') + error.message);
-            }
-
-            progress.style.display = 'none';
-        }
-
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
-            }
-        };
-
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                hidePreview();
-                hideUploadModal();
-                hideQRModal();
-            }
-            if (event.ctrlKey && event.key === 'f') {
-                event.preventDefault();
-                searchInput.focus();
-            }
-            if (event.ctrlKey && event.key === 'u') {
-                event.preventDefault();
-                showUploadModal();
-            }
+    function loadTree() {
+        fetch('/api/tree').then(function(r) { return r.json(); }).then(function(data) {
+            treeData = data;
+            var container = document.getElementById('fileTree');
+            container.innerHTML = '';
+            renderTreeNode(container, data, 0);
+        }).catch(function() {
+            document.getElementById('fileTree').innerHTML = '<div class="tree-loading">~</div>';
         });
+    }
+
+    function renderTreeNode(parent, node, depth) {
+        var row = document.createElement('div');
+        row.className = 'tree-node' + (node.path === curPath ? ' active' : '');
+        row.style.paddingLeft = (8 + depth * 14) + 'px';
+        row.setAttribute('data-path', node.path);
+
+        var arrow = document.createElement('span');
+        arrow.className = 'tree-arrow';
+        var hasChildren = node.children && node.children.length > 0;
+        if (hasChildren) {
+            arrow.textContent = '\u25B6';
+            var isOpen = curPath === node.path || curPath.indexOf(node.path + '/') === 0;
+            if (isOpen) arrow.classList.add('open');
+        }
+
+        var icon = document.createElement('span');
+        icon.className = 'tree-icon';
+        icon.textContent = '\uD83D\uDCC1';
+
+        var label = document.createElement('span');
+        label.className = 'tree-label';
+        label.textContent = node.name || '/';
+
+        row.appendChild(arrow);
+        row.appendChild(icon);
+        row.appendChild(label);
+        parent.appendChild(row);
+
+        if (hasChildren) {
+            var childContainer = document.createElement('div');
+            childContainer.className = 'tree-children';
+            var isOpen = curPath === node.path || curPath.indexOf(node.path + '/') === 0;
+            if (isOpen) childContainer.classList.add('open');
+
+            for (var i = 0; i < node.children.length; i++) {
+                renderTreeNode(childContainer, node.children[i], depth + 1);
+            }
+            parent.appendChild(childContainer);
+
+            (function(a, cc, p) {
+                row.onclick = function(e) {
+                    e.stopPropagation();
+                    var isExpanded = cc.classList.contains('open');
+                    if (isExpanded) {
+                        a.classList.remove('open');
+                        cc.classList.remove('open');
+                    } else {
+                        a.classList.add('open');
+                        cc.classList.add('open');
+                    }
+                    navigateTo(p);
+                };
+            })(arrow, childContainer, node.path);
+        } else {
+            row.onclick = function(e) {
+                e.stopPropagation();
+                navigateTo(node.path);
+            };
+        }
+    }
+
+    function setLang(lang) {
+        curLang = lang;
+        localStorage.setItem('upftp-lang', lang);
+        document.getElementById('langEN').className = 'lang-btn' + (lang==='en'?' active':'');
+        document.getElementById('langZH').className = 'lang-btn' + (lang==='zh'?' active':'');
+        document.querySelectorAll('[data-i18n]').forEach(function(el) {
+            var k = el.getAttribute('data-i18n');
+            if (LANG[lang][k]) el.textContent = LANG[lang][k];
+        });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+            var k = el.getAttribute('data-i18n-placeholder');
+            if (LANG[lang][k]) el.placeholder = LANG[lang][k];
+        });
+        updateBreadcrumb();
+        render(allFiles);
+    }
+
+    function updateBreadcrumb() {
+        var el = document.getElementById('breadcrumb');
+        var titleEl = document.getElementById('pageTitle');
+        if (curPath === '/') {
+            el.innerHTML = '<a href="javascript:navigateTo(\'/\')">/' + T('root') + '</a>';
+            titleEl.textContent = T('all_files');
+        } else {
+            var parts = curPath.split('/').filter(Boolean);
+            var html = '<a href="javascript:navigateTo(\'/\')">/</a>';
+            var acc = '';
+            for (var i = 0; i < parts.length; i++) {
+                acc += '/' + parts[i];
+                if (i < parts.length - 1) {
+                    html += ' <a href="javascript:navigateTo(\'' + acc + '\')">' + parts[i] + '</a> / ';
+                } else {
+                    html += ' ' + parts[i];
+                }
+            }
+            el.innerHTML = html;
+            titleEl.textContent = parts[parts.length - 1];
+        }
+    }
+
+    function getIcon(name, isDir) {
+        if (isDir) return '&#128193;';
+        var ext = (name.split('.').pop() || '').toLowerCase();
+        var map = {jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'🖼️',svg:'🖼️',webp:'🖼️',
+            mp4:'🎬',avi:'🎬',mov:'🎬',mkv:'🎬',webm:'🎬',
+            mp3:'🎵',wav:'🎵',flac:'🎵',ogg:'🎵',m4a:'🎵',
+            pdf:'📄',doc:'📄',docx:'📄',xls:'📄',xlsx:'📄',ppt:'📄',pptx:'📄',
+            zip:'📦',rar:'📦','7z':'📦',tar:'📦',gz:'📦',
+            js:'💻',ts:'💻',py:'💻',go:'💻',html:'💻',css:'💻',sh:'💻',java:'💻',c:'💻',cpp:'💻',rs:'💻',
+            txt:'📝',md:'📝',json:'📝',yaml:'📝',yml:'📝',xml:'📝',csv:'📝',log:'📝',toml:'📝'};
+        return map[ext] || '📄';
+    }
+
+    function render(files) {
+        allFiles = files;
+        var body = document.getElementById('fileListBody');
+        if (!files || files.length === 0) {
+            body.innerHTML = '<div class="empty"><p>' + T('empty') + '</p></div>';
+            return;
+        }
+        var h = '';
+        for (var i = 0; i < files.length; i++) {
+            var f = files[i];
+            var icon = getIcon(f.Name, f.IsDir);
+            var click = f.IsDir
+                ? 'navigateTo(\'' + escHtml(f.Path) + '\')'
+                : '';
+            h += '<div class="file-row">';
+            h += '<div class="file-name-cell">';
+            h += '<span class="file-icon">' + icon + '</span>';
+            h += '<span class="file-name" onclick="' + click + '">' + escHtml(f.Name) + '</span>';
+            h += '</div>';
+            h += '<div class="file-size">' + escHtml(f.Size || '') + '</div>';
+            h += '<div class="file-date">' + escHtml(f.ModTime || '') + '</div>';
+            h += '<div class="file-actions">';
+            h += '<button class="act-btn" onclick="copyLink(&#39;' + escHtml(f.Path) + '&#39;)">' + T('copy_link') + '</button>';
+            if (f.IsDir) {
+                h += '<button class="act-btn" onclick="dlFile(&#39;' + escHtml(f.Path) + '&#39;)">' + T('zip_download') + '</button>';
+            } else {
+                h += '<button class="act-btn" onclick="dlFile(&#39;' + escHtml(f.Path) + '&#39;)">' + T('download') + '</button>';
+            }
+            h += '<button class="act-btn" onclick="showQR(&#39;' + escHtml(f.Path) + '&#39;)">' + T('qr_download') + '</button>';
+            if (f.CanPreview && !f.IsDir) {
+                h += '<button class="act-btn" onclick="showPreview(&#39;' + escHtml(f.Path) + '&#39;,&#39;' + escHtml(f.Name) + '&#39;,' + f.FileType + ')">' + T('preview') + '</button>';
+            }
+            h += '</div></div>';
+        }
+        body.innerHTML = h;
+    }
+
+    function escHtml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function copyLink(path) {
+        var url = window.location.origin + '/download/' + path;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(function(){ toast(T('copied')); });
+        } else {
+            var ta = document.createElement('textarea'); ta.value = url;
+            document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+            document.body.removeChild(ta); toast(T('copied'));
+        }
+    }
+
+    function dlFile(path) {
+        var a = document.createElement('a');
+        a.href = '/download/' + path; a.click();
+    }
+
+    function showQR(path) {
+        var url = window.location.origin + '/download/' + path;
+        document.getElementById('qrTitle').textContent = T('qr_title');
+        document.getElementById('qrImage').src = '/api/qrcode?url=' + encodeURIComponent(url);
+        document.getElementById('qrLink').textContent = url;
+        document.getElementById('qrModal').classList.add('show');
+    }
+
+    function closeQR() {
+        document.getElementById('qrModal').classList.remove('show');
+    }
+
+    function showPreview(path, name, fileType) {
+        var modal = document.getElementById('previewModal');
+        var body = document.getElementById('previewBody');
+        var title = document.getElementById('previewTitle');
+        title.textContent = name;
+        body.innerHTML = '<div class="loading">' + T('loading') + '</div>';
+        modal.classList.add('show');
+
+        var url = path;
+        // fileType: 1=image, 2=text, 4=video, 5=audio, 8=code
+        if (fileType === 1) {
+            body.innerHTML = '<img src="' + url + '" alt="" onerror="previewErr()">';
+        } else if (fileType === 4) {
+            body.innerHTML = '<video controls src="' + url + '" onerror="previewErr()"></video>';
+        } else if (fileType === 5) {
+            body.innerHTML = '<audio controls src="' + url + '" onerror="previewErr()" style="width:100%"></audio>';
+        } else {
+            // text/code: fetch content
+            fetch(url).then(function(r) {
+                if (!r.ok) throw new Error('fetch failed');
+                return r.text();
+            }).then(function(text) {
+                body.innerHTML = '<pre>' + escHtml(text) + '</pre>';
+            }).catch(function() {
+                previewErr();
+            });
+        }
+    }
+
+    function previewErr() {
+        document.getElementById('previewBody').innerHTML = '<div class="error">' + T('preview_err') + '</div>';
+    }
+
+    function closePreview() {
+        document.getElementById('previewModal').classList.remove('show');
+        document.getElementById('previewBody').innerHTML = '';
+    }
+
+    function doUpload() {
+        var input = document.createElement('input');
+        input.type = 'file'; input.multiple = true;
+        input.onchange = function(e) {
+            var fd = new FormData();
+            fd.append('path', curPath);
+            for (var i = 0; i < e.target.files.length; i++) fd.append('files', e.target.files[i]);
+            fetch('/api/upload', {method:'POST', body:fd}).then(function(r) {
+                if (r.ok) navigateTo(curPath);
+            });
+        };
+        input.click();
+    }
+
+    function onSearch(q) {
+        var rows = document.querySelectorAll('.file-row');
+        var ql = q.toLowerCase();
+        for (var i = 0; i < rows.length; i++) {
+            var name = rows[i].querySelector('.file-name').textContent.toLowerCase();
+            rows[i].style.display = name.indexOf(ql) >= 0 ? 'grid' : 'none';
+        }
+    }
+
+    function toast(msg) {
+        var el = document.getElementById('toast');
+        el.textContent = msg; el.classList.add('show');
+        setTimeout(function(){ el.classList.remove('show'); }, 2500);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        allFiles = {{.Files | json}};
+        curPath = {{.CurrentPath}};
+        setLang(curLang);
+        updateBreadcrumb();
+        render(allFiles);
+        loadTree();
+    });
+
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.path) {
+            navigateTo(e.state.path);
+        }
+    });
     </script>
 </body>
 </html>
