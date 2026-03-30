@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zy84338719/upftp/internal/config"
+	"github.com/zy84338719/upftp/internal/conf"
 )
 
 func (m Model) renderSearch() string {
@@ -101,18 +101,18 @@ func (m Model) renderExamples() string {
 	lines = append(lines, labelStyle.Render(fmt.Sprintf(" %-14s", t(lang, "example_file")+":"))+" "+truncateString(exampleFile, 40))
 	lines = append(lines, "")
 	lines = append(lines, labelStyle.Render(" "+t(lang, "browser")+":"))
-	lines = append(lines, "  "+greenStyle.Render("http://"+m.serverIP+config.AppConfig.Port))
+	lines = append(lines, "  "+greenStyle.Render("http://"+m.serverIP+conf.AppConfig.Port))
 	lines = append(lines, "")
 	lines = append(lines, labelStyle.Render(" "+t(lang, "cli_tools")+":"))
 	lines = append(lines, "  curl -O \""+truncateString(exampleURL, 52))
 	lines = append(lines, "  wget \""+truncateString(exampleURL, 54))
 
-	if config.AppConfig.EnableFTP {
+	if conf.AppConfig.EnableFTP {
 		lines = append(lines, "")
 		lines = append(lines, labelStyle.Render(" "+t(lang, "ftp_client")+":"))
 		lines = append(lines, "  ftp "+m.serverIP)
-		lines = append(lines, "  Username: "+config.AppConfig.Username)
-		lines = append(lines, "  Password: "+config.AppConfig.Password)
+		lines = append(lines, "  Username: "+conf.AppConfig.Username)
+		lines = append(lines, "  Password: "+conf.AppConfig.Password)
 	}
 
 	lines = append(lines, "")

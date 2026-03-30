@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/zy84338719/upftp/internal/config"
+	"github.com/zy84338719/upftp/internal/conf"
 )
 
 type CLI struct {
@@ -19,7 +19,7 @@ type CLI struct {
 }
 
 func NewCLI() *CLI {
-	lang := config.AppConfig.GetLanguage()
+	lang := conf.AppConfig.GetLanguage()
 	return &CLI{
 		fileMap: make(map[string]string),
 		lang:    lang,
@@ -31,7 +31,7 @@ func (c *CLI) SetServerIP(ip string) {
 }
 
 func (c *CLI) Start(ctx context.Context, s chan os.Signal) {
-	c.fileMap = scanDirectory(config.AppConfig.Root, c.serverIP)
+	c.fileMap = scanDirectory(conf.AppConfig.Root, c.serverIP)
 
 	if !isTerminal() {
 		fmt.Printf("\n  %s\n", t(c.lang, "stdin_closed"))
@@ -73,11 +73,11 @@ func walkDir(currentDir, rootDir, serverIP string, files map[string]string) {
 			relDir = strings.TrimPrefix(relDir, "/")
 
 			var authPrefix string
-			if config.AppConfig.HTTPAuth.Enabled {
-				authPrefix = config.AppConfig.HTTPAuth.Username + ":" + config.AppConfig.HTTPAuth.Password + "@"
+			if conf.AppConfig.HTTPAuth.Enabled {
+				authPrefix = conf.AppConfig.HTTPAuth.Username + ":" + conf.AppConfig.HTTPAuth.Password + "@"
 			}
 
-			hostPart := authPrefix + serverIP + config.AppConfig.Port
+			hostPart := authPrefix + serverIP + conf.AppConfig.Port
 			var downloadURL string
 			if relDir != "" {
 				downloadURL = fmt.Sprintf("http://%s/download/%s/%s", hostPart, relDir, entry.Name())
