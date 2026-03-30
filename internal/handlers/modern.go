@@ -1,20 +1,20 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"html/template"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path"
 
+	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/zy84338719/upftp/internal/config"
 	"github.com/zy84338719/upftp/internal/filehandler"
 )
 
-// handleModernIndex 处理新的现代化页面
-func handleModernIndex(w http.ResponseWriter, r *http.Request) {
-	urlPath := r.URL.Path
+func handleModernIndex(ctx context.Context, c *app.RequestContext) {
+	urlPath := string(c.Request.URI().Path())
 	if urlPath == "" {
 		urlPath = "/"
 	}
@@ -23,23 +23,22 @@ func handleModernIndex(w http.ResponseWriter, r *http.Request) {
 	fileInfo, err := os.Stat(fsPath)
 	if err != nil {
 		if urlPath != "/" {
-			http.NotFound(w, r)
+			c.String(404, "Not Found")
 			return
 		}
-		handleModernFileList(w, r, urlPath)
+		handleModernFileList(ctx, c, urlPath)
 		return
 	}
 
 	if !fileInfo.IsDir() {
-		http.ServeFile(w, r, fsPath)
+		c.File(fsPath)
 		return
 	}
 
-	handleModernFileList(w, r, urlPath)
+	handleModernFileList(ctx, c, urlPath)
 }
 
-// handleModernFileList 处理文件列表显示
-func handleModernFileList(w http.ResponseWriter, r *http.Request, urlPath string) {
+func handleModernFileList(ctx context.Context, c *app.RequestContext, urlPath string) {
 	fsPath := path.Join(config.AppConfig.Root, urlPath)
 	files, _ := ioutil.ReadDir(fsPath)
 	fileList := []filehandler.FileInfo{}
@@ -54,7 +53,7 @@ func handleModernFileList(w http.ResponseWriter, r *http.Request, urlPath string
 	}
 
 	for _, file := range files {
-		filePath := path.Join(urlPath, file.Name())
+		fp := path.Join(urlPath, file.Name())
 		fileType := filehandler.GetFileType(file.Name())
 
 		info := filehandler.FileInfo{
@@ -64,7 +63,7 @@ func handleModernFileList(w http.ResponseWriter, r *http.Request, urlPath string
 			IsDir:      file.IsDir(),
 			CanPreview: !file.IsDir() && filehandler.CanPreviewFile(fileType),
 			FileType:   fileType,
-			Path:       filePath,
+			Path:       fp,
 			Icon:       getFileIcon(file.IsDir(), fileType),
 		}
 		fileList = append(fileList, info)
@@ -82,6 +81,10 @@ func handleModernFileList(w http.ResponseWriter, r *http.Request, urlPath string
 		ProjectURL    string
 		ProjectName   string
 		LastCommit    string
+		Language      string
+		HTTPAuthOn    bool
+		HTTPAuthUser  string
+		HTTPAuthPass  string
 	}{
 		Files:         fileList,
 		ServerInfo:    serverInfo,
@@ -94,6 +97,10 @@ func handleModernFileList(w http.ResponseWriter, r *http.Request, urlPath string
 		ProjectURL:    config.AppConfig.ProjectURL,
 		ProjectName:   config.AppConfig.ProjectName,
 		LastCommit:    config.AppConfig.LastCommit,
+		Language:      config.AppConfig.GetLanguage(),
+		HTTPAuthOn:    config.AppConfig.HTTPAuth.Enabled,
+		HTTPAuthUser:  config.AppConfig.HTTPAuth.Username,
+		HTTPAuthPass:  config.AppConfig.HTTPAuth.Password,
 	}
 
 	funcMap := template.FuncMap{
@@ -105,15 +112,16 @@ func handleModernFileList(w http.ResponseWriter, r *http.Request, urlPath string
 
 	content, err := templates.ReadFile("templates/index.html")
 	if err != nil {
-		http.Error(w, "Template read error: "+err.Error(), http.StatusInternalServerError)
+		c.String(500, "Template read error: "+err.Error())
 		return
 	}
 	tmpl, err := template.New("index").Funcs(funcMap).Parse(string(content))
 	if err != nil {
-		http.Error(w, "Template parse error: "+err.Error(), http.StatusInternalServerError)
+		c.String(500, "Template parse error: "+err.Error())
 		return
 	}
-	if err := tmpl.Execute(w, data); err != nil {
-		http.Error(w, "Template execute error: "+err.Error(), http.StatusInternalServerError)
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	if err := tmpl.Execute(c.Response.BodyWriter(), data); err != nil {
+		c.String(500, "Template execute error: "+err.Error())
 	}
 }

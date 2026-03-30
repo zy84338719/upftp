@@ -4,11 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -39,6 +35,7 @@ type FTPClient struct {
 	binaryMode bool
 	restPos    int64
 	name       string
+	rnfrName   string
 }
 
 func NewFTPServer() *FTPServer {
@@ -125,31 +122,53 @@ func (s *FTPServer) handleClient(client *FTPClient) {
 		case <-s.ctx.Done():
 			return
 		default:
-			line, err := client.reader.ReadString('\n')
-			if err != nil {
-				return
-			}
-
-			line = strings.TrimSpace(line)
-			if line == "" {
-				continue
-			}
-
-			parts := strings.SplitN(line, " ", 2)
-			cmd := strings.ToUpper(parts[0])
-			args := ""
-			if len(parts) > 1 {
-				args = parts[1]
-			}
-
-			s.handleCommand(client, cmd, args)
 		}
+
+		line, err := client.reader.ReadString('\n')
+		if err != nil {
+			return
+		}
+
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		parts := strings.SplitN(line, " ", 2)
+		cmd := strings.ToUpper(parts[0])
+		args := ""
+		if len(parts) > 1 {
+			args = parts[1]
+		}
+
+		s.handleCommand(client, cmd, args)
 	}
 }
 
 func (c *FTPClient) sendResponse(msg string) {
 	c.writer.WriteString(msg + "\r\n")
 	c.writer.Flush()
+}
+
+func (s *FTPServer) resolvePath(cwd, pathArg string) string {
+	if pathArg == "" {
+		return cwd
+	}
+	if strings.HasPrefix(pathArg, "/") {
+		return strings.ReplaceAll(filepathClean(pathArg), `\`, "/")
+	}
+	return strings.ReplaceAll(filepathClean(strings.Join([]string{cwd, pathArg}, "/")), `\`, "/")
+}
+
+func filepathClean(p string) string {
+	cleaned := p
+	for strings.Contains(cleaned, "//") {
+		cleaned = strings.ReplaceAll(cleaned, "//", "/")
+	}
+	if cleaned != "/" {
+		cleaned = strings.TrimRight(cleaned, "/")
+	}
+	return cleaned
 }
 
 func (s *FTPServer) handleCommand(client *FTPClient, cmd, args string) {
@@ -184,9 +203,9 @@ func (s *FTPServer) handleCommand(client *FTPClient, cmd, args string) {
 			return
 		}
 		newPath := s.resolvePath(client.cwd, args)
-		fullPath := filepath.Join(s.rootPath, newPath)
+		fullPath := ftpJoin(s.rootPath, newPath)
 
-		if info, err := os.Stat(fullPath); err == nil && info.IsDir() {
+		if info, err := statPath(fullPath); err == nil && info.IsDir() {
 			client.cwd = newPath
 			client.sendResponse("250 Directory changed")
 		} else {
@@ -199,10 +218,7 @@ func (s *FTPServer) handleCommand(client *FTPClient, cmd, args string) {
 			return
 		}
 		if client.cwd != "/" {
-			client.cwd = filepath.Dir(client.cwd)
-			if client.cwd == "." {
-				client.cwd = "/"
-			}
+			client.cwd = s.resolvePath(client.cwd, "..")
 		}
 		client.sendResponse("250 Directory changed")
 
@@ -211,9 +227,15 @@ func (s *FTPServer) handleCommand(client *FTPClient, cmd, args string) {
 			client.sendResponse("530 Not logged in")
 			return
 		}
-		if args == "I" || args == "A" {
-			client.binaryMode = (args == "I")
-			client.sendResponse("200 Type set to " + args)
+		if args == "I" || args == "A" || args == "A N" {
+			t := args
+			if strings.HasPrefix(args, "A") {
+				t = "A"
+				client.binaryMode = false
+			} else {
+				client.binaryMode = true
+			}
+			client.sendResponse("200 Type set to " + t)
 		} else {
 			client.sendResponse("500 Invalid type")
 		}
@@ -239,12 +261,26 @@ func (s *FTPServer) handleCommand(client *FTPClient, cmd, args string) {
 		}
 		s.handlePORT(client, args)
 
+	case "EPRT":
+		if !client.auth {
+			client.sendResponse("530 Not logged in")
+			return
+		}
+		s.handleEPRT(client, args)
+
 	case "LIST", "NLST":
 		if !client.auth {
 			client.sendResponse("530 Not logged in")
 			return
 		}
 		s.handleLIST(client, cmd == "LIST")
+
+	case "MLSD":
+		if !client.auth {
+			client.sendResponse("530 Not logged in")
+			return
+		}
+		s.handleMLSD(client)
 
 	case "RETR":
 		if !client.auth {
@@ -259,6 +295,13 @@ func (s *FTPServer) handleCommand(client *FTPClient, cmd, args string) {
 			return
 		}
 		s.handleSTOR(client, args)
+
+	case "APPE":
+		if !client.auth {
+			client.sendResponse("530 Not logged in")
+			return
+		}
+		s.handleAPPE(client, args)
 
 	case "MKD", "XMKD":
 		if !client.auth {
@@ -286,6 +329,7 @@ func (s *FTPServer) handleCommand(client *FTPClient, cmd, args string) {
 			client.sendResponse("530 Not logged in")
 			return
 		}
+		client.rnfrName = s.resolvePath(client.cwd, args)
 		client.sendResponse("350 Ready for RNTO")
 
 	case "RNTO":
@@ -301,6 +345,13 @@ func (s *FTPServer) handleCommand(client *FTPClient, cmd, args string) {
 			return
 		}
 		s.handleSIZE(client, args)
+
+	case "MDTM":
+		if !client.auth {
+			client.sendResponse("530 Not logged in")
+			return
+		}
+		s.handleMDTM(client, args)
 
 	case "REST":
 		if !client.auth {
@@ -319,7 +370,13 @@ func (s *FTPServer) handleCommand(client *FTPClient, cmd, args string) {
 		client.sendResponse("211-Features:")
 		client.sendResponse(" PASV")
 		client.sendResponse(" EPSV")
+		client.sendResponse(" EPRT")
 		client.sendResponse(" UTF8")
+		client.sendResponse(" MLST type*;size*;modify*;perm*;")
+		client.sendResponse(" MLSD")
+		client.sendResponse(" REST STREAM")
+		client.sendResponse(" SIZE")
+		client.sendResponse(" MDTM")
 		client.sendResponse("211 End")
 
 	case "OPTS":
@@ -332,236 +389,27 @@ func (s *FTPServer) handleCommand(client *FTPClient, cmd, args string) {
 	case "SYST":
 		client.sendResponse("215 UNIX Type: L8")
 
+	case "STAT":
+		if !client.auth {
+			client.sendResponse("530 Not logged in")
+			return
+		}
+		client.sendResponse("213-FTP Server Status")
+		client.sendResponse(fmt.Sprintf(" Connected from %s", client.conn.RemoteAddr().String()))
+		client.sendResponse(fmt.Sprintf(" Current directory: %s", client.cwd))
+		client.sendResponse("213 End")
+
 	case "NOOP":
 		client.sendResponse("200 OK")
 
-	default:
-		client.sendResponse("500 Unknown command: " + cmd)
-	}
-}
-
-func (s *FTPServer) resolvePath(cwd, path string) string {
-	if strings.HasPrefix(path, "/") {
-		return filepath.Clean(path)
-	}
-	return filepath.Clean(filepath.Join(cwd, path))
-}
-
-func (s *FTPServer) handlePASV(client *FTPClient) {
-	if client.dataConn != nil {
-		client.dataConn.Close()
-	}
-
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		client.sendResponse("425 Failed to enter passive mode")
-		return
-	}
-
-	client.dataConn = listener
-
-	addr := listener.Addr().(*net.TCPAddr)
-	p1 := addr.Port / 256
-	p2 := addr.Port % 256
-
-	host, _, _ := net.SplitHostPort(client.conn.LocalAddr().String())
-	ip := strings.Split(host, ".")
-
-	client.sendResponse(fmt.Sprintf("227 Entering Passive Mode (%s,%s,%s,%s,%d,%d)",
-		ip[0], ip[1], ip[2], ip[3], p1, p2))
-}
-
-func (s *FTPServer) handleEPSV(client *FTPClient) {
-	if client.dataConn != nil {
-		client.dataConn.Close()
-	}
-
-	listener, err := net.Listen("tcp", ":0")
-	if err != nil {
-		client.sendResponse("425 Failed to enter passive mode")
-		return
-	}
-
-	client.dataConn = listener
-	addr := listener.Addr().(*net.TCPAddr)
-
-	client.sendResponse(fmt.Sprintf("229 Entering Extended Passive Mode (|||%d|)", addr.Port))
-}
-
-func (s *FTPServer) handlePORT(client *FTPClient, args string) {
-	parts := strings.Split(args, ",")
-	if len(parts) != 6 {
-		client.sendResponse("501 Invalid PORT parameter")
-		return
-	}
-
-	host := fmt.Sprintf("%s.%s.%s.%s", parts[0], parts[1], parts[2], parts[3])
-	p1, _ := strconv.Atoi(parts[4])
-	p2, _ := strconv.Atoi(parts[5])
-	port := p1*256 + p2
-
-	client.dataPort = fmt.Sprintf("%s:%d", host, port)
-	client.sendResponse("200 PORT command successful")
-}
-
-func (s *FTPServer) getDataConn(client *FTPClient) (net.Conn, error) {
-	if client.dataConn != nil {
-		conn, err := client.dataConn.Accept()
-		client.dataConn.Close()
-		client.dataConn = nil
-		return conn, err
-	}
-
-	if client.dataPort != "" {
-		conn, err := net.Dial("tcp", client.dataPort)
-		client.dataPort = ""
-		return conn, err
-	}
-
-	return nil, fmt.Errorf("no data connection")
-}
-
-func (s *FTPServer) handleLIST(client *FTPClient, detailed bool) {
-	conn, err := s.getDataConn(client)
-	if err != nil {
-		client.sendResponse("425 Failed to establish data connection")
-		return
-	}
-	defer conn.Close()
-
-	client.sendResponse("150 Opening data connection")
-
-	dirPath := filepath.Join(s.rootPath, client.cwd)
-	files, err := ioutil.ReadDir(dirPath)
-	if err != nil {
-		client.sendResponse("550 Failed to list directory")
-		return
-	}
-
-	for _, file := range files {
-		var line string
-		if detailed {
-			mode := "-rw-r--r--"
-			if file.IsDir() {
-				mode = "drwxr-xr-x"
-			}
-			line = fmt.Sprintf("%s 1 ftp ftp %12d Jan 01 00:00 %s\r\n",
-				mode, file.Size(), file.Name())
-		} else {
-			line = file.Name() + "\r\n"
+	case "ABOR":
+		if client.dataConn != nil {
+			client.dataConn.Close()
+			client.dataConn = nil
 		}
-		conn.Write([]byte(line))
+		client.sendResponse("226 Abort successful")
+
+	default:
+		client.sendResponse("502 Command not implemented: " + cmd)
 	}
-
-	client.sendResponse("226 Transfer complete")
-}
-
-func (s *FTPServer) handleRETR(client *FTPClient, filename string) {
-	filePath := filepath.Join(s.rootPath, s.resolvePath(client.cwd, filename))
-
-	file, err := os.Open(filePath)
-	if err != nil {
-		client.sendResponse("550 File not found")
-		return
-	}
-	defer file.Close()
-
-	conn, err := s.getDataConn(client)
-	if err != nil {
-		client.sendResponse("425 Failed to establish data connection")
-		return
-	}
-	defer conn.Close()
-
-	client.sendResponse("150 Opening data connection")
-
-	if client.restPos > 0 {
-		file.Seek(client.restPos, 0)
-		client.restPos = 0
-	}
-
-	io.Copy(conn, file)
-	logger.Info("FTP RETR: %s", filename)
-
-	client.sendResponse("226 Transfer complete")
-}
-
-func (s *FTPServer) handleSTOR(client *FTPClient, filename string) {
-	filePath := filepath.Join(s.rootPath, s.resolvePath(client.cwd, filename))
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		client.sendResponse("550 Failed to create file")
-		return
-	}
-	defer file.Close()
-
-	conn, err := s.getDataConn(client)
-	if err != nil {
-		client.sendResponse("425 Failed to establish data connection")
-		return
-	}
-	defer conn.Close()
-
-	client.sendResponse("150 Opening data connection")
-
-	io.Copy(file, conn)
-	logger.Info("FTP STOR: %s", filename)
-
-	client.sendResponse("226 Transfer complete")
-}
-
-func (s *FTPServer) handleMKD(client *FTPClient, dirname string) {
-	dirPath := filepath.Join(s.rootPath, s.resolvePath(client.cwd, dirname))
-
-	if err := os.MkdirAll(dirPath, 0755); err != nil {
-		client.sendResponse("550 Failed to create directory")
-		return
-	}
-
-	logger.Info("FTP MKD: %s", dirname)
-	client.sendResponse("257 Directory created")
-}
-
-func (s *FTPServer) handleRMD(client *FTPClient, dirname string) {
-	dirPath := filepath.Join(s.rootPath, s.resolvePath(client.cwd, dirname))
-
-	if err := os.RemoveAll(dirPath); err != nil {
-		client.sendResponse("550 Failed to remove directory")
-		return
-	}
-
-	logger.Info("FTP RMD: %s", dirname)
-	client.sendResponse("250 Directory removed")
-}
-
-func (s *FTPServer) handleDELE(client *FTPClient, filename string) {
-	filePath := filepath.Join(s.rootPath, s.resolvePath(client.cwd, filename))
-
-	if err := os.Remove(filePath); err != nil {
-		client.sendResponse("550 Failed to delete file")
-		return
-	}
-
-	logger.Info("FTP DELE: %s", filename)
-	client.sendResponse("250 File deleted")
-}
-
-func (s *FTPServer) handleSIZE(client *FTPClient, filename string) {
-	filePath := filepath.Join(s.rootPath, s.resolvePath(client.cwd, filename))
-
-	info, err := os.Stat(filePath)
-	if err != nil {
-		client.sendResponse("550 File not found")
-		return
-	}
-
-	client.sendResponse(fmt.Sprintf("213 %d", info.Size()))
-}
-
-func (s *FTPServer) handleRNTO(client *FTPClient, newName string) {
-	// This assumes RNFR was called before
-	// For simplicity, we store the old name temporarily
-	// A proper implementation would store this in the client struct
-	client.sendResponse("250 Rename successful")
 }

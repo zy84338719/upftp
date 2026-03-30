@@ -2,15 +2,17 @@ package server
 
 import (
 	"context"
-	"net/http"
+	"crypto/tls"
 
+	"github.com/cloudwego/hertz/pkg/app/server"
+	hertzConfig "github.com/cloudwego/hertz/pkg/common/config"
 	"github.com/zy84338719/upftp/internal/config"
 	"github.com/zy84338719/upftp/internal/handlers"
 	"github.com/zy84338719/upftp/internal/logger"
 )
 
 type HTTPServer struct {
-	server *http.Server
+	h *server.Hertz
 }
 
 func NewHTTPServer() *HTTPServer {
@@ -20,18 +22,28 @@ func NewHTTPServer() *HTTPServer {
 func (s *HTTPServer) Start(ctx context.Context, ip string, httpPort, ftpPort int, root string) error {
 	handlers.SetServerInfo(ip, httpPort, ftpPort, root)
 
-	mux := http.NewServeMux()
-	handlers.RegisterRoutes(mux)
-
-	s.server = &http.Server{
-		Addr:    config.AppConfig.HTTPAddr(),
-		Handler: mux,
+	opts := []hertzConfig.Option{
+		server.WithHostPorts(config.AppConfig.HTTPAddr()),
+		server.WithDisablePrintRoute(true),
 	}
+
+	if config.AppConfig.HTTPS.Enabled {
+		cert, err := tls.LoadX509KeyPair(config.AppConfig.HTTPS.CertFile, config.AppConfig.HTTPS.KeyFile)
+		if err == nil {
+			opts = append(opts, server.WithTLS(&tls.Config{
+				Certificates: []tls.Certificate{cert},
+			}))
+		}
+	}
+
+	s.h = server.Default(opts...)
+
+	handlers.RegisterRoutes(s.h.Engine)
 
 	go func() {
 		<-ctx.Done()
 		logger.Info("Stopping HTTP server...")
-		s.server.Shutdown(context.Background())
+		s.h.Shutdown(ctx)
 	}()
 
 	protocol := "HTTP"
@@ -46,18 +58,8 @@ func (s *HTTPServer) Start(ctx context.Context, ip string, httpPort, ftpPort int
 		logger.Info("Web interface: http://%s:%d", ip, httpPort)
 	}
 
-	var err error
-	if config.AppConfig.HTTPS.Enabled {
-		if config.AppConfig.HTTPS.CertFile == "" || config.AppConfig.HTTPS.KeyFile == "" {
-			logger.Error("HTTPS enabled but cert_file or key_file not specified")
-			return nil
-		}
-		err = s.server.ListenAndServeTLS(config.AppConfig.HTTPS.CertFile, config.AppConfig.HTTPS.KeyFile)
-	} else {
-		err = s.server.ListenAndServe()
-	}
-
-	if err != http.ErrServerClosed {
+	err := s.h.Run()
+	if err != nil && err != context.Canceled {
 		return err
 	}
 
