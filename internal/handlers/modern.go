@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"encoding/json"
 	"html/template"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/zy84338719/upftp/internal/config"
 	"github.com/zy84338719/upftp/internal/filehandler"
@@ -15,12 +15,6 @@ import (
 // handleModernIndex 处理新的现代化页面
 func handleModernIndex(w http.ResponseWriter, r *http.Request) {
 	urlPath := r.URL.Path
-	if !strings.HasPrefix(urlPath, "/modern/") {
-		urlPath = "/"
-	} else {
-		urlPath = strings.TrimPrefix(urlPath, "/modern")
-	}
-
 	if urlPath == "" {
 		urlPath = "/"
 	}
@@ -102,6 +96,24 @@ func handleModernFileList(w http.ResponseWriter, r *http.Request, urlPath string
 		LastCommit:    config.AppConfig.LastCommit,
 	}
 
-	tmpl, _ := template.ParseFS(templates, "templates/modern-index.html")
-	tmpl.Execute(w, data)
+	funcMap := template.FuncMap{
+		"json": func(v interface{}) template.JS {
+			b, _ := json.Marshal(v)
+			return template.JS(b)
+		},
+	}
+
+	content, err := templates.ReadFile("templates/index.html")
+	if err != nil {
+		http.Error(w, "Template read error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	tmpl, err := template.New("index").Funcs(funcMap).Parse(string(content))
+	if err != nil {
+		http.Error(w, "Template parse error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := tmpl.Execute(w, data); err != nil {
+		http.Error(w, "Template execute error: "+err.Error(), http.StatusInternalServerError)
+	}
 }
