@@ -3,12 +3,15 @@ module github.com/zy84338719/upftp
 go 1.24.2
 
 require (
+	github.com/apache/thrift v0.13.0
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.2.4
 	github.com/charmbracelet/lipgloss v1.0.0
 	github.com/cloudwego/hertz v0.10.4
 	github.com/mark3labs/mcp-go v0.46.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
+	go.uber.org/zap v1.27.1
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -45,6 +48,7 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 	golang.org/x/sync v0.9.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
