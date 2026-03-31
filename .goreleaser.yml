@@ -1,4 +1,4 @@
-version: 2
+version: 1
 
 project_name: upftp
 builds:
@@ -92,8 +92,6 @@ brews:
     repository:
       owner: zy84338719
       name: homebrew-tap
-      branch: main
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     folder: Formula
     homepage: https://github.com/zy84338719/upftp
     description: Modern cross-platform file sharing server with HTTP and FTP support
@@ -118,8 +116,6 @@ scoops:
   - bucket:
       owner: zy84338719
       name: scoop-bucket
-      branch: main
-      token: "{{ .Env.SCOOP_GITHUB_TOKEN }}"
     folder: bucket
     homepage: https://github.com/zy84338719/upftp
     description: Modern cross-platform file sharing server with HTTP and FTP support
