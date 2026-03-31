@@ -125,10 +125,6 @@ scoops:
     persist:
       - data
       - config
-    post_install: |
-      # Create example configuration file
-      New-Item -ItemType Directory -Path "$env:SCOOP\apps\upftp\current\config" -Force | Out-Null
-      Copy-Item -Path "$env:SCOOP\apps\upftp\current\upftp.example.yaml" -Destination "$env:SCOOP\apps\upftp\current\config\upftp.yaml" -Force
 
 checksum:
   name_template: 'checksums.txt'
