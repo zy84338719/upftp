@@ -35,4 +35,5 @@ _testmain.go
 *.local.yml
 upftp.yaml
 dumped_hertz_remote_config.json
+upftp
 		  
