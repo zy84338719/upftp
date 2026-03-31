@@ -136,3 +136,28 @@ type ServerInfo struct {
 func (s *Service) Stat(path string) (os.FileInfo, error) {
 	return s.fileSvc.Stat(path)
 }
+
+// ReadFileContent 读取文件内容
+func (s *Service) ReadFileContent(path string) ([]byte, error) {
+	return s.fileSvc.ReadFileContent(path)
+}
+
+// WriteFileContent 写入文件内容
+func (s *Service) WriteFileContent(path string, content []byte) error {
+	return s.fileSvc.WriteFileContent(path, content)
+}
+
+// Move 移动文件或目录
+func (s *Service) Move(src, dst string) error {
+	return s.fileSvc.Move(src, dst)
+}
+
+// Copy 复制文件
+func (s *Service) Copy(src, dst string) error {
+	return s.fileSvc.Copy(src, dst)
+}
+
+// SearchFiles 搜索文件
+func (s *Service) SearchFiles(pattern, path string) ([]string, error) {
+	return s.fileSvc.SearchFiles(pattern, path)
+}

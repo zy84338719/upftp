@@ -16,7 +16,7 @@ func TestFileType(t *testing.T) {
 		{"video file", "test.mp4", FileTypeVideo},
 		{"audio file", "test.mp3", FileTypeAudio},
 		{"archive file", "test.zip", FileTypeArchive},
-		{"other file", "test.xyz", FileTypeOther},
+		{"unknown file", "test.xyz", FileTypeUnknown},
 	}
 
 	for _, tc := range testCases {
