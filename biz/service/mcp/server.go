@@ -15,11 +15,8 @@ import (
 type MCPServer struct {
 	server     *mcpserver.MCPServer
 	svc        *file.Service
-	httpServer *httpAdapter
 	ftpServer  *ftpAdapter
-	httpCancel context.CancelFunc
 	ftpCancel  context.CancelFunc
-	httpPort   int
 	ftpPort    int
 	ip         string
 	mu         sync.Mutex
@@ -86,11 +83,4 @@ func (s *MCPServer) resolveIP() string {
 		return "127.0.0.1"
 	}
 	return ip
-}
-
-func (s *MCPServer) resolveHTTPPort() int {
-	if s.httpPort != 0 {
-		return s.httpPort
-	}
-	return 10000
 }

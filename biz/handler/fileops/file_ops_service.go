@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"sync"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
@@ -16,8 +17,35 @@ import (
 	"github.com/zy84338719/upftp/pkg/logger"
 )
 
-// 初始化Service实例
-var svc = file.NewService(conf.AppConfig)
+// 延迟初始化Service实例
+var (
+	svc     *file.Service
+	svcOnce sync.Once
+)
+
+func getService() *file.Service {
+	svcOnce.Do(func() {
+		svc = file.NewService(conf.AppConfig)
+	})
+	return svc
+}
+
+// checkAuth 检查用户是否已登录（如果HTTP认证启用）
+func checkAuth(c *app.RequestContext) bool {
+	// 如果HTTP认证未启用，允许上传
+	if !conf.AppConfig.HTTPAuth.Enabled {
+		return true
+	}
+
+	// 检查请求中是否有认证信息
+	username, password, ok := c.Request.BasicAuth()
+	if !ok {
+		return false
+	}
+
+	// 验证用户名密码
+	return username == conf.AppConfig.HTTPAuth.Username && password == conf.AppConfig.HTTPAuth.Password
+}
 
 // HandleUpload .
 // @router /api/upload [POST]
@@ -29,6 +57,15 @@ func HandleUpload(ctx context.Context, c *app.RequestContext) {
 		c.String(consts.StatusBadRequest, err.Error())
 		return
 	}
+
+	// 检查认证
+	if !checkAuth(c) {
+		c.Header("WWW-Authenticate", `Basic realm="UPFTP"`)
+		c.JSON(consts.StatusUnauthorized, map[string]string{"error": "Authentication required"})
+		return
+	}
+
+	svc := getService()
 
 	if !svc.UploadEnabled() {
 		c.JSON(consts.StatusForbidden, map[string]string{"error": "Upload disabled"})
@@ -91,6 +128,13 @@ func HandleCreateFolder(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	// 检查认证
+	if !checkAuth(c) {
+		c.Header("WWW-Authenticate", `Basic realm="UPFTP"`)
+		c.JSON(consts.StatusUnauthorized, map[string]string{"error": "Authentication required"})
+		return
+	}
+
 	body, err := c.Body()
 	if err != nil {
 		c.JSON(consts.StatusBadRequest, map[string]string{"error": "Invalid request"})
@@ -107,7 +151,7 @@ func HandleCreateFolder(ctx context.Context, c *app.RequestContext) {
 	}
 
 	folderPath := filepath.Join(folderReq.Path, folderReq.Name)
-	if err := svc.CreateFolder(folderPath); err != nil {
+	if err := getService().CreateFolder(folderPath); err != nil {
 		c.JSON(consts.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
@@ -130,6 +174,13 @@ func HandleDelete(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	// 检查认证
+	if !checkAuth(c) {
+		c.Header("WWW-Authenticate", `Basic realm="UPFTP"`)
+		c.JSON(consts.StatusUnauthorized, map[string]string{"error": "Authentication required"})
+		return
+	}
+
 	body, err := c.Body()
 	if err != nil {
 		c.JSON(consts.StatusBadRequest, map[string]string{"error": "Invalid request"})
@@ -143,7 +194,7 @@ func HandleDelete(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := svc.Delete(deleteReq.Path); err != nil {
+	if err := getService().Delete(deleteReq.Path); err != nil {
 		c.JSON(consts.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
@@ -166,6 +217,13 @@ func HandleRename(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	// 检查认证
+	if !checkAuth(c) {
+		c.Header("WWW-Authenticate", `Basic realm="UPFTP"`)
+		c.JSON(consts.StatusUnauthorized, map[string]string{"error": "Authentication required"})
+		return
+	}
+
 	body, err := c.Body()
 	if err != nil {
 		c.JSON(consts.StatusBadRequest, map[string]string{"error": "Invalid request"})
@@ -181,7 +239,7 @@ func HandleRename(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := svc.Rename(renameReq.Path, renameReq.NewName); err != nil {
+	if err := getService().Rename(renameReq.Path, renameReq.NewName); err != nil {
 		c.JSON(consts.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}

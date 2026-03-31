@@ -83,10 +83,10 @@ func Init(version, lastCommit, buildDate, goVersion, platform, projectURL, proje
 		Platform:    platform,
 		ProjectURL:  projectURL,
 		ProjectName: projectName,
-		Port:        ":10000",
-		FTPPort:     ":2121",
-		WebDAVPort:  ":8080",
-		NFSPort:     ":2049",
+		Port:        ":12345",
+		FTPPort:     ":12348",
+		WebDAVPort:  ":12346",
+		NFSPort:     ":12347",
 		Root:        "./",
 		Username:    "admin",
 		Password:    "admin",
@@ -101,10 +101,10 @@ func Init(version, lastCommit, buildDate, goVersion, platform, projectURL, proje
 		fmt.Fprintf(os.Stderr, "Usage:\n")
 		fmt.Fprintf(os.Stderr, "  upftp [options]\n\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
-		fmt.Fprintf(os.Stderr, "  -p <port>       HTTP server port (default: 10000)\n")
-		fmt.Fprintf(os.Stderr, "  -ftp <port>     FTP server port (default: 2121)\n")
-		fmt.Fprintf(os.Stderr, "  -webdav <port>  WebDAV server port (default: 8080)\n")
-		fmt.Fprintf(os.Stderr, "  -nfs <port>     NFS server port (default: 2049)\n")
+		fmt.Fprintf(os.Stderr, "  -p <port>       HTTP server port (default: 12345)\n")
+		fmt.Fprintf(os.Stderr, "  -ftp <port>     FTP server port (default: 12348)\n")
+		fmt.Fprintf(os.Stderr, "  -webdav <port>  WebDAV server port (default: 12346)\n")
+		fmt.Fprintf(os.Stderr, "  -nfs <port>     NFS server port (default: 12347)\n")
 		fmt.Fprintf(os.Stderr, "  -d <dir>        Share directory (default: current directory)\n")
 		fmt.Fprintf(os.Stderr, "  -auto           Automatically select first available network interface\n")
 		fmt.Fprintf(os.Stderr, "  -enable-ftp     Enable FTP server (default: false)\n")
@@ -244,7 +244,7 @@ func (c *Config) GetHTTPPort() int {
 	var p int
 	fmt.Sscanf(port, "%d", &p)
 	if p == 0 {
-		return 10000
+		return 12345
 	}
 	return p
 }
@@ -257,7 +257,7 @@ func (c *Config) GetFTPPort() int {
 	var p int
 	fmt.Sscanf(port, "%d", &p)
 	if p == 0 {
-		return 2121
+		return 12348
 	}
 	return p
 }
@@ -270,7 +270,7 @@ func (c *Config) GetWebDAVPort() int {
 	var p int
 	fmt.Sscanf(port, "%d", &p)
 	if p == 0 {
-		return 8080
+		return 12346
 	}
 	return p
 }
@@ -283,7 +283,7 @@ func (c *Config) GetNFSPort() int {
 	var p int
 	fmt.Sscanf(port, "%d", &p)
 	if p == 0 {
-		return 2049
+		return 12347
 	}
 	return p
 }
@@ -336,10 +336,10 @@ func GenerateSampleConfig() string {
 # https://github.com/zy84338719/upftp
 
 # Server settings
-port: "10000"
-ftp_port: "2121"
-webdav_port: "8080"
-nfs_port: "2049"
+port: "12345"
+ftp_port: "12348"
+webdav_port: "12346"
+nfs_port: "12347"
 root: "./"
 auto_select: false
 enable_ftp: false

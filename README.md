@@ -7,7 +7,9 @@
 </h1>
 
 <div align="center">
-  <h4>一个现代化的跨平台文件共享服务器 | A modern cross-platform file sharing server</h4>
+  <h4>一个现代化的跨平台多协议文件共享服务器 | A modern cross-platform multi-protocol file sharing server</h4>
+  <p>支持 HTTP、FTP、WebDAV、NFS 和 MCP 协议，提供现代化 Web 界面和丰富的文件预览功能</p>
+  <p>Supports HTTP, FTP, WebDAV, NFS and MCP protocols, with modern web interface and rich file preview capabilities</p>
 </div>
 
 <p align="center">
@@ -50,8 +52,13 @@
 ## 📸 截图展示
 
 <div align="center">
-  <img src="img.png" alt="UPFTP Screenshot" width="80%">
+  <img src="img.png" alt="UPFTP Web Interface" width="80%">
   <p><em>Web界面预览</em></p>
+</div>
+
+<div align="center">
+  <img src="img.png" alt="UPFTP Command Line Interface" width="80%">
+  <p><em>命令行界面预览</em></p>
 </div>
 
 ## ✨ 主要特性
@@ -62,6 +69,9 @@
 - 直观的文件类型图标
 - 优雅的预览模态框
 - **🌍 多语言支持**: 自动检测浏览器语言，支持中英文切换
+- **🎨 新界面设计**: 页面标题更新为 "AI-First File Server"，添加版本徽章和功能展示栏
+- **📱 移动优化**: 改进的移动端响应式设计，添加用于移动访问的 QR 码按钮
+- **📤 上传界面**: 改进的上传部分 UI
 
 ### 🎨 智能语言体验
 - **自动语言检测**: 根据浏览器语言自动选择中文或英文界面
@@ -70,23 +80,42 @@
 - **完整界面翻译**: 所有文本元素均支持中英文显示
 
 ### 🎥 丰富的文件预览
-- **图片**: JPG, PNG, GIF, SVG, WebP 等
-- **视频**: MP4, AVI, MOV, WebM, MKV 等
-- **音频**: MP3, WAV, FLAC, AAC, OGG 等  
-- **文本/代码**: 支持语法高亮的代码预览
-- **文档**: PDF, Office文档下载支持
+- **图片**: JPG, PNG, GIF, SVG, WebP, BMP, ICO, HEIC, HEIF, AVIF, TIFF 等
+- **视频**: MP4, AVI, MOV, WebM, MKV, M4V, MPEG, 3GP, OGV 等
+- **音频**: MP3, WAV, FLAC, AAC, OGG, M4A, WMA, OPUS, AIFF, APE 等  
+- **文本/代码**: 支持语法高亮的多种编程语言，包括 Vue, Svelte, Dart, Kotlin 等
+- **文档**: PDF可在浏览器预览，Office文档提供下载
+- **容器格式**: Dockerfile, Makefile 等
 
-### 🚀 双协议支持
+### 🚀 多协议支持
 - **HTTP服务器**: 现代Web界面，支持浏览器访问
 - **FTP服务器**: 传统FTP协议，支持各种FTP客户端
 - **MCP服务器**: Model Context Protocol，支持AI集成
+- **WebDAV服务器**: 支持WebDAV协议
+- **NFS服务器**: 支持NFS协议
 - 独立端口配置，可单独启用
 
 ### 🔧 便捷的管理
-- 交互式命令行界面
-- 文件搜索和列表管理
-- 下载链接生成
-- 实时文件系统刷新
+- **交互式命令行界面**: 带有 ASCII 艺术标志横幅和 emoji 图标的改进命令菜单
+- **文件搜索和列表管理**: 改进的文件列表，带有分页（最多 20 项）
+- **下载链接生成**: 增强的下载示例，带有 MCP 集成信息
+- **实时文件系统刷新**
+- **服务器状态**: 新的服务器状态和关于信息屏幕
+- **版本信息**: 版本信息命令（`v` 或 `version`）
+
+### 📝 配置增强
+- **改进的配置文件**: 带有详细注释和使用示例
+- **配置路径跟踪**: 配置路径跟踪和显示
+- **更好的组织**: 更好的部分组织，带有视觉分隔符
+
+### 📊 更好的日志记录
+- **改进的日志格式**: 带有视觉指示器
+- **颜色编码**: 带有项目符号的颜色编码日志级别
+- **信息丰富**: 更多信息丰富的启动消息
+
+### 🔒 安全与配置
+- **路径验证**: 更好的上传路径验证
+- **错误处理**: 增强的错误处理
 
 ### 🌍 跨平台支持
 - **Linux**: amd64, arm64
@@ -222,9 +251,13 @@ upftp [选项]
 选项：
     -p <port>       HTTP服务器端口 (默认: 10000)
     -ftp <port>     FTP服务器端口 (默认: 2121)
+    -webdav <port>  WebDAV服务器端口 (默认: 8080)
+    -nfs <port>     NFS服务器端口 (默认: 2049)
     -d <dir>        共享目录 (默认: 当前目录)
     -auto           自动选择第一个可用网络接口
     -enable-ftp     启用FTP服务器
+    -enable-webdav  启用WebDAV服务器
+    -enable-nfs     启用NFS服务器
     -enable-mcp     启用MCP服务器 (AI集成)
     -user <name>    FTP用户名 (默认: admin)
     -pass <pass>    FTP密码 (默认: admin)
@@ -237,7 +270,9 @@ upftp [选项]
 
 1. **Web浏览器**: `http://你的IP:端口`
 2. **FTP客户端**: `ftp://你的IP:FTP端口`  
-3. **命令行下载**: `curl -O http://你的IP:端口/download/文件名`
+3. **WebDAV客户端**: `http://你的IP:WebDAV端口`
+4. **NFS客户端**: `你的IP:/share`
+5. **命令行下载**: `curl -O http://你的IP:端口/download/文件名`
 
 ### MCP 集成
 
@@ -305,8 +340,10 @@ make deps && make build
 - **语言**: Go 1.24+
 - **Web框架**: 标准库 `net/http`
 - **FTP服务器**: 自定义实现
-- **前端**: 原生 HTML/CSS/JavaScript
-- **构建工具**: Make, GoReleaser
+- **WebDAV服务器**: 自定义实现
+- **NFS服务器**: 基于 go-nfs 库
+- **前端**: Vue 3 + TypeScript + Vite
+- **构建工具**: Make, GoReleaser, npm
 - **CI/CD**: GitHub Actions
 
 ## 📖 详细文档
@@ -462,8 +499,13 @@ make fmt
 ## 📸 Screenshots
 
 <div align="center">
-  <img src="img.png" alt="UPFTP Screenshot" width="80%">
+  <img src="img.png" alt="UPFTP Web Interface" width="80%">
   <p><em>Web Interface Preview</em></p>
+</div>
+
+<div align="center">
+  <img src="img.png" alt="UPFTP Command Line Interface" width="80%">
+  <p><em>Command Line Interface Preview</em></p>
 </div>
 
 ## ✨ Key Features
@@ -474,6 +516,9 @@ make fmt
 - Intuitive file type icons
 - Elegant preview modal dialogs
 - **🌍 Multi-language Support**: Auto-detect browser language, supports Chinese/English switching
+- **🎨 New Interface Design**: Updated page title to "AI-First File Server", added version badge and feature showcase bar
+- **📱 Mobile Optimization**: Improved responsive design for mobile, added QR code button for mobile access
+- **📤 Upload Interface**: Enhanced upload section UI
 
 ### 🎨 Smart Language Experience
 - **Auto Language Detection**: Automatically selects Chinese or English based on browser language
@@ -482,23 +527,42 @@ make fmt
 - **Complete Interface Translation**: All text elements support Chinese/English display
 
 ### 🎥 Rich File Preview
-- **Images**: JPG, PNG, GIF, SVG, WebP, etc.
-- **Videos**: MP4, AVI, MOV, WebM, MKV, etc.
-- **Audio**: MP3, WAV, FLAC, AAC, OGG, etc.
-- **Text/Code**: Syntax-highlighted code preview
-- **Documents**: PDF, Office document download support
+- **Images**: JPG, PNG, GIF, SVG, WebP, BMP, ICO, HEIC, HEIF, AVIF, TIFF, etc.
+- **Videos**: MP4, AVI, MOV, WebM, MKV, M4V, MPEG, 3GP, OGV, etc.
+- **Audio**: MP3, WAV, FLAC, AAC, OGG, M4A, WMA, OPUS, AIFF, APE, etc.
+- **Text/Code**: Syntax-highlighted code preview for multiple programming languages including Vue, Svelte, Dart, Kotlin, etc.
+- **Documents**: PDF preview in browser, Office document download support
+- **Container Formats**: Dockerfile, Makefile, etc.
 
-### 🚀 Dual Protocol Support  
+### 🚀 Multi-Protocol Support  
 - **HTTP Server**: Modern web interface for browser access
 - **FTP Server**: Traditional FTP protocol for FTP clients
 - **MCP Server**: Model Context Protocol for AI integration
+- **WebDAV Server**: Support for WebDAV protocol
+- **NFS Server**: Support for NFS protocol
 - Independent port configuration, can be enabled separately
 
 ### 🔧 Convenient Management
-- Interactive command-line interface
-- File search and listing management
-- Download link generation
-- Real-time file system refresh
+- **Interactive Command-line Interface**: Beautiful ASCII art logo banner and improved command menu with emoji icons
+- **File Search and Listing Management**: Improved file listing with pagination (max 20 items)
+- **Download Link Generation**: Enhanced download examples with MCP integration info
+- **Real-time File System Refresh**
+- **Server Status**: New server status and about information screens
+- **Version Info**: Version info command (`v` or `version`)
+
+### 📝 Configuration Enhancements
+- **Improved Configuration File**: Detailed comments and usage examples
+- **Configuration Path Tracking**: Configuration path tracking and display
+- **Better Organization**: Better section organization with visual separators
+
+### 📊 Better Logging
+- **Improved Log Format**: Visual indicators in log format
+- **Color-coded**: Color-coded log levels with bullet points
+- **Informative**: More informative startup messages
+
+### 🔒 Security & Configuration
+- **Path Validation**: Better validation for upload paths
+- **Error Handling**: Enhanced error handling
 
 ### 🌍 Cross-Platform Support
 - **Linux**: amd64, arm64
@@ -634,9 +698,13 @@ upftp [options]
 Options:
     -p <port>       HTTP server port (default: 10000)
     -ftp <port>     FTP server port (default: 2121)  
+    -webdav <port>  WebDAV server port (default: 8080)
+    -nfs <port>     NFS server port (default: 2049)
     -d <dir>        Share directory (default: current directory)
     -auto           Automatically select first available network interface
     -enable-ftp     Enable FTP server
+    -enable-webdav  Enable WebDAV server
+    -enable-nfs     Enable NFS server
     -enable-mcp     Enable MCP server for AI integration
     -user <name>    FTP username (default: admin)
     -pass <pass>    FTP password (default: admin)
@@ -649,7 +717,9 @@ After startup, you can access via:
 
 1. **Web Browser**: `http://your-ip:port`
 2. **FTP Client**: `ftp://your-ip:ftp-port`
-3. **Command Line**: `curl -O http://your-ip:port/download/filename`
+3. **WebDAV Client**: `http://your-ip:webdav-port`
+4. **NFS Client**: `your-ip:/share`
+5. **Command Line**: `curl -O http://your-ip:port/download/filename`
 
 ### MCP Integration
 
@@ -721,8 +791,10 @@ make help
 - **Language**: Go 1.24+
 - **Web Framework**: Standard library `net/http`
 - **FTP Server**: Custom implementation
-- **Frontend**: Native HTML/CSS/JavaScript
-- **Build Tools**: Make, GoReleaser
+- **WebDAV Server**: Custom implementation
+- **NFS Server**: Based on go-nfs library
+- **Frontend**: Vue 3 + TypeScript + Vite
+- **Build Tools**: Make, GoReleaser, npm
 - **CI/CD**: GitHub Actions
 
 ## 📖 Documentation

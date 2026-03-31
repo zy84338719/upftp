@@ -25,6 +25,21 @@ jobs:
           go-version: '1.24'
           cache: true
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install front-end dependencies
+        run: npm ci
+        working-directory: ./web
+        
+      - name: Build front-end
+        run: npm run build
+        working-directory: ./web
+
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
 
@@ -36,7 +51,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
-          SCOP_GITHUB_TOKEN: ${{ secrets.SCOP_GITHUB_TOKEN }}
+          SCOOP_GITHUB_TOKEN: ${{ secrets.SCOOP_GITHUB_TOKEN }}
 
   publish-apt:
     needs: goreleaser

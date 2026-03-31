@@ -6,6 +6,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 	account "github.com/zy84338719/upftp/biz/router/account"
 	auth "github.com/zy84338719/upftp/biz/router/auth"
+	download "github.com/zy84338719/upftp/biz/router/download"
 	file "github.com/zy84338719/upftp/biz/router/file"
 	fileops "github.com/zy84338719/upftp/biz/router/fileops"
 	index "github.com/zy84338719/upftp/biz/router/index"
@@ -27,6 +28,8 @@ func GeneratedRegister(r *server.Hertz) {
 	account.Register(r)
 
 	auth.Register(r)
+
+	download.Register(r)
 
 	index.Register(r)
 }
