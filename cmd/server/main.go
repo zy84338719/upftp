@@ -36,32 +36,47 @@ var (
 
 // serveEmbeddedStatic 从嵌入文件系统提供静态文件
 func serveEmbeddedStatic(ctx context.Context, c *app.RequestContext) {
-	path := c.Param("filepath")
-	if path == "" {
-		path = string(c.Request.URI().Path()[1:])
+	filepath := c.Param("filepath")
+	if filepath == "" {
+		// 从完整 URI 路径提取
+		filepath = string(c.Request.URI().Path())
 	}
 
-	// 从嵌入文件系统读取
+	// 移除路径前导的斜杠（如果有）
+	filepath = strings.TrimPrefix(filepath, "/")
+
+	// 如果路径以 assets/ 开头，直接使用；否则添加 assets/ 前缀
+	var fullPath string
+	if strings.HasPrefix(filepath, "assets/") {
+		fullPath = filepath
+	} else {
+		fullPath = "assets/" + filepath
+	}
+
+	// 调试日志
+	logger.Debug("serveEmbeddedStatic: filepath=%s, fullPath=%s", filepath, fullPath)
+
+	// 从嵌入文件系统读取（GetTemplatesFS 已经返回 templates 子目录）
 	templateFS := index.GetTemplatesFS()
-	data, err := fs.ReadFile(templateFS, path)
+	data, err := fs.ReadFile(templateFS, fullPath)
 	if err != nil {
 		// 如果文件不存在，返回 404
-		c.String(consts.StatusNotFound, "File not found")
+		c.String(consts.StatusNotFound, "File not found: "+fullPath)
 		return
 	}
 
 	// 设置正确的 Content-Type
 	var contentType string
 	switch {
-	case strings.HasSuffix(path, ".css"):
+	case strings.HasSuffix(fullPath, ".css"):
 		contentType = "text/css"
-	case strings.HasSuffix(path, ".js"):
+	case strings.HasSuffix(fullPath, ".js"):
 		contentType = "application/javascript"
-	case strings.HasSuffix(path, ".ico"):
+	case strings.HasSuffix(fullPath, ".ico"):
 		contentType = "image/x-icon"
-	case strings.HasSuffix(path, ".png"):
+	case strings.HasSuffix(fullPath, ".png"):
 		contentType = "image/png"
-	case strings.HasSuffix(path, ".jpg"), strings.HasSuffix(path, ".jpeg"):
+	case strings.HasSuffix(fullPath, ".jpg"), strings.HasSuffix(fullPath, ".jpeg"):
 		contentType = "image/jpeg"
 	default:
 		contentType = "application/octet-stream"
