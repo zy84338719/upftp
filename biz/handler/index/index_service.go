@@ -22,10 +22,10 @@ import (
 
 // 延迟初始化Service实例
 var (
-	svc            *file.Service
-	svcOnce        sync.Once
-	templateCache  *template.Template
-	templateOnce   sync.Once
+	svc           *file.Service
+	svcOnce       sync.Once
+	templateCache *template.Template
+	templateOnce  sync.Once
 )
 
 func getService() *file.Service {
