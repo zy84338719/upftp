@@ -10,14 +10,8 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/zy84338719/upftp/biz/service/ftp"
-	protocolHttp "github.com/zy84338719/upftp/biz/service/http"
 	"github.com/zy84338719/upftp/pkg/conf"
 )
-
-type httpAdapter struct {
-	server *protocolHttp.HTTPServer
-	cancel context.CancelFunc
-}
 
 type ftpAdapter struct {
 	server *ftp.FTPServer
@@ -26,10 +20,7 @@ type ftpAdapter struct {
 
 func (s *MCPServer) registerServerTools() {
 	s.server.AddTool(mcp.NewTool("start_server",
-		mcp.WithDescription("Start HTTP/FTP server for LAN file sharing. Returns access URLs that can be shared with others."),
-		mcp.WithNumber("http_port",
-			mcp.Description("HTTP server port (default: 10000)"),
-		),
+		mcp.WithDescription("Start FTP server for LAN file sharing. HTTP server is managed by the main application. Returns access URLs that can be shared with others."),
 		mcp.WithNumber("ftp_port",
 			mcp.Description("FTP server port (default: 2121)"),
 		),
@@ -42,10 +33,7 @@ func (s *MCPServer) registerServerTools() {
 	), s.handleStartServer)
 
 	s.server.AddTool(mcp.NewTool("stop_server",
-		mcp.WithDescription("Stop HTTP/FTP servers."),
-		mcp.WithBoolean("stop_http",
-			mcp.Description("Stop HTTP server (default: true)"),
-		),
+		mcp.WithDescription("Stop FTP servers. HTTP server is managed by the main application."),
 		mcp.WithBoolean("stop_ftp",
 			mcp.Description("Stop FTP server (default: true)"),
 		),
@@ -80,7 +68,6 @@ func (s *MCPServer) handleStartServer(ctx context.Context, request mcp.CallToolR
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	httpPort := request.GetInt("http_port", 10000)
 	ftpPort := request.GetInt("ftp_port", 2121)
 	enableFTP := request.GetBool("enable_ftp", false)
 	newDir := request.GetString("directory", "")
@@ -102,25 +89,9 @@ func (s *MCPServer) handleStartServer(ctx context.Context, request mcp.CallToolR
 	var results []string
 	results = append(results, fmt.Sprintf("Shared directory: %s", s.root()))
 	results = append(results, "")
-
-	if s.httpServer == nil {
-		s.svc.SetServerInfo(ip, httpPort, ftpPort, s.root())
-		s.httpPort = httpPort
-
-		httpServer := protocolHttp.NewHTTPServer(s.svc)
-		startCtx, cancel := context.WithCancel(s.ctx)
-
-		s.httpServer = &httpAdapter{server: httpServer, cancel: cancel}
-
-		go func() {
-			httpServer.Start(startCtx)
-		}()
-
-		time.Sleep(100 * time.Millisecond)
-		results = append(results, fmt.Sprintf("HTTP Server started: http://%s:%d", ip, httpPort))
-	} else {
-		results = append(results, fmt.Sprintf("HTTP Server already running on port %d", s.httpPort))
-	}
+	results = append(results, "HTTP Server is managed by the main application.")
+	results = append(results, fmt.Sprintf("  Access URL: http://%s:%d", ip, conf.AppConfig.GetHTTPPort()))
+	results = append(results, "")
 
 	if enableFTP {
 		if s.ftpServer == nil {
@@ -150,16 +121,9 @@ func (s *MCPServer) handleStopServer(ctx context.Context, request mcp.CallToolRe
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	stopHTTP := request.GetBool("stop_http", true)
 	stopFTP := request.GetBool("stop_ftp", true)
 
 	var results []string
-
-	if stopHTTP && s.httpServer != nil {
-		s.httpServer.cancel()
-		s.httpServer = nil
-		results = append(results, "HTTP Server stopped")
-	}
 
 	if stopFTP && s.ftpServer != nil {
 		s.ftpServer.cancel()
@@ -167,9 +131,7 @@ func (s *MCPServer) handleStopServer(ctx context.Context, request mcp.CallToolRe
 		results = append(results, "FTP Server stopped")
 	}
 
-	if len(results) == 0 {
-		results = append(results, "No servers to stop")
-	}
+	results = append(results, "HTTP Server is managed by the main application and cannot be stopped via this tool.")
 
 	return mcp.NewToolResultText(strings.Join(results, "\n")), nil
 }
@@ -186,12 +148,9 @@ func (s *MCPServer) handleGetServerStatus(ctx context.Context, request mcp.CallT
 	results = append(results, fmt.Sprintf("LAN IP: %s", ip))
 	results = append(results, "")
 
-	if s.httpServer != nil {
-		results = append(results, fmt.Sprintf("HTTP Server: RUNNING on port %d", s.httpPort))
-		results = append(results, fmt.Sprintf("  Access URL: http://%s:%d", ip, s.httpPort))
-	} else {
-		results = append(results, "HTTP Server: STOPPED")
-	}
+	results = append(results, fmt.Sprintf("HTTP Server: MANAGED by main application"))
+	results = append(results, fmt.Sprintf("  Access URL: http://%s:%d", ip, conf.AppConfig.GetHTTPPort()))
+	results = append(results, "")
 
 	if s.ftpServer != nil {
 		results = append(results, fmt.Sprintf("FTP Server: RUNNING on port %d", s.ftpPort))
@@ -216,7 +175,7 @@ func (s *MCPServer) handleGetDownloadURL(ctx context.Context, request mcp.CallTo
 
 	s.mu.Lock()
 	ip := s.resolveIP()
-	port := s.resolveHTTPPort()
+	port := conf.AppConfig.GetHTTPPort()
 	s.mu.Unlock()
 
 	url := fmt.Sprintf("http://%s:%d/download/%s", ip, port, path)

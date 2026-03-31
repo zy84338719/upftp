@@ -2,12 +2,18 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"io/fs"
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"syscall"
 
+	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/cloudwego/hertz/pkg/protocol/consts"
+	"github.com/zy84338719/upftp/biz/handler/index"
 	"github.com/zy84338719/upftp/biz/router"
 	"github.com/zy84338719/upftp/biz/service/ftp"
 	"github.com/zy84338719/upftp/biz/service/nfs"
@@ -27,6 +33,44 @@ var (
 	ProjectURL  = "https://github.com/zy84338719/upftp"
 	ProjectName = "UPFTP"
 )
+
+// serveEmbeddedStatic 从嵌入文件系统提供静态文件
+func serveEmbeddedStatic(ctx context.Context, c *app.RequestContext) {
+	path := c.Param("filepath")
+	if path == "" {
+		path = string(c.Request.URI().Path()[1:])
+	}
+
+	// 从嵌入文件系统读取
+	templateFS := index.GetTemplatesFS()
+	data, err := fs.ReadFile(templateFS, path)
+	if err != nil {
+		// 如果文件不存在，返回 404
+		c.String(consts.StatusNotFound, "File not found")
+		return
+	}
+
+	// 设置正确的 Content-Type
+	var contentType string
+	switch {
+	case strings.HasSuffix(path, ".css"):
+		contentType = "text/css"
+	case strings.HasSuffix(path, ".js"):
+		contentType = "application/javascript"
+	case strings.HasSuffix(path, ".ico"):
+		contentType = "image/x-icon"
+	case strings.HasSuffix(path, ".png"):
+		contentType = "image/png"
+	case strings.HasSuffix(path, ".jpg"), strings.HasSuffix(path, ".jpeg"):
+		contentType = "image/jpeg"
+	default:
+		contentType = "application/octet-stream"
+	}
+
+	c.Header("Content-Type", contentType)
+	c.SetStatusCode(consts.StatusOK)
+	c.Response.BodyWriter().Write(data)
+}
 
 func main() {
 	conf.Init(Version, LastCommit, BuildDate, GoVersion, Platform, ProjectURL, ProjectName)
@@ -64,8 +108,27 @@ func main() {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	// 启动 HTTP 服务
-	h := server.Default()
+	h := server.Default(
+		server.WithHostPorts(fmt.Sprintf(":%d", conf.AppConfig.GetHTTPPort())),
+	)
+
+	// 注册静态文件路由 - 处理 /assets/*
+	h.GET("/assets/*filepath", serveEmbeddedStatic)
+	h.GET("/favicon.ico", func(ctx context.Context, c *app.RequestContext) {
+		templateFS := index.GetTemplatesFS()
+		data, err := fs.ReadFile(templateFS, "favicon.ico")
+		if err != nil {
+			c.String(consts.StatusNotFound, "File not found")
+			return
+		}
+		c.Header("Content-Type", "image/x-icon")
+		c.SetStatusCode(consts.StatusOK)
+		c.Response.BodyWriter().Write(data)
+	})
+
+	// 注册路由（包括根路径 / 的处理）
 	router.GeneratedRegister(h)
+
 	go func() {
 		h.Spin()
 	}()

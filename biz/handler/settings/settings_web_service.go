@@ -5,7 +5,7 @@ package settings
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"sync"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
@@ -15,8 +15,18 @@ import (
 	"github.com/zy84338719/upftp/pkg/logger"
 )
 
-// 初始化Service实例
-var svc = file.NewService(conf.AppConfig)
+// 延迟初始化Service实例
+var (
+	svc     *file.Service
+	svcOnce sync.Once
+)
+
+func getService() *file.Service {
+	svcOnce.Do(func() {
+		svc = file.NewService(conf.AppConfig)
+	})
+	return svc
+}
 
 // HandleGetSettings .
 // @router /api/settings [GET]
@@ -29,16 +39,25 @@ func HandleGetSettings(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	info := svc.GetServerInfo()
-	// 转换为 map[string]string
-	infoStr := make(map[string]string)
-	for k, v := range info {
-		infoStr[k] = fmt.Sprintf("%v", v)
+	cfg := conf.AppConfig
+
+	// 返回完整的设置（不包含密码）
+	settingsMap := map[string]interface{}{
+		"ftpUser":      cfg.Username,
+		"enableFTP":    cfg.EnableFTP,
+		"enableMCP":    cfg.EnableMCP,
+		"enableWebDAV": cfg.EnableWebDAV,
+		"enableNFS":    cfg.EnableNFS,
+		"ftpPort":      cfg.GetFTPPort(),
+		"webDAVPort":   cfg.GetWebDAVPort(),
+		"nfsPort":      cfg.GetNFSPort(),
+		"httpAuthOn":   cfg.HTTPAuth.Enabled,
 	}
-	resp := &settings.GetSettingsResponse{
-		Settings: infoStr,
-	}
-	c.JSON(consts.StatusOK, resp)
+
+	// 直接返回完整的 JSON，不使用 thrift 生成的结构体
+	c.JSON(consts.StatusOK, map[string]interface{}{
+		"settings": settingsMap,
+	})
 }
 
 // HandleSetLanguage .
@@ -66,54 +85,12 @@ func HandleSetLanguage(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if err := svc.Config().SetLanguage(langReq.Language); err != nil {
+	if err := getService().Config().SetLanguage(langReq.Language); err != nil {
 		c.JSON(consts.StatusBadRequest, map[string]string{"error": "Invalid language"})
 		return
 	}
 
 	resp := &settings.SetLanguageResponse{
-		Success: true,
-	}
-	c.JSON(consts.StatusOK, resp)
-}
-
-// HandleSetHTTPAuth .
-// @router /api/settings/http-auth [POST]
-func HandleSetHTTPAuth(ctx context.Context, c *app.RequestContext) {
-	var err error
-	var req settings.SetHTTPAuthRequest
-	err = c.BindAndValidate(&req)
-	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
-		return
-	}
-
-	body, err := c.Body()
-	if err != nil {
-		c.JSON(consts.StatusBadRequest, map[string]string{"error": "Invalid request"})
-		return
-	}
-
-	var authReq struct {
-		Enabled  bool   `json:"enabled"`
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
-	if err := json.Unmarshal(body, &authReq); err != nil {
-		c.JSON(consts.StatusBadRequest, map[string]string{"error": "Invalid request"})
-		return
-	}
-
-	svc.Config().HTTPAuth.Enabled = authReq.Enabled
-	if authReq.Username != "" {
-		svc.Config().HTTPAuth.Username = authReq.Username
-	}
-	if authReq.Password != "" {
-		svc.Config().HTTPAuth.Password = authReq.Password
-	}
-
-	logger.Info("HTTP auth settings updated")
-	resp := &settings.SetHTTPAuthResponse{
 		Success: true,
 	}
 	c.JSON(consts.StatusOK, resp)
@@ -145,6 +122,7 @@ func HandleSetFTP(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	svc := getService()
 	if ftpReq.Username != "" {
 		svc.Config().Username = ftpReq.Username
 	}
@@ -157,4 +135,60 @@ func HandleSetFTP(ctx context.Context, c *app.RequestContext) {
 		Success: true,
 	}
 	c.JSON(consts.StatusOK, resp)
+}
+
+// HandleSetServices .
+// @router /api/settings/services [POST]
+func HandleSetServices(ctx context.Context, c *app.RequestContext) {
+	body, err := c.Body()
+	if err != nil {
+		c.JSON(consts.StatusBadRequest, map[string]string{"error": "Invalid request"})
+		return
+	}
+
+	var servicesReq struct {
+		EnableFTP    bool   `json:"enableFTP"`
+		EnableMCP    bool   `json:"enableMCP"`
+		EnableWebDAV bool   `json:"enableWebDAV"`
+		EnableNFS    bool   `json:"enableNFS"`
+		FTPPort      string `json:"ftpPort"`
+		WebDAVPort   string `json:"webDAVPort"`
+		NFSPort      string `json:"nfsPort"`
+		MCPPort      string `json:"mcpPort"`
+	}
+	if err := json.Unmarshal(body, &servicesReq); err != nil {
+		c.JSON(consts.StatusBadRequest, map[string]string{"error": "Invalid request"})
+		return
+	}
+
+	svc := getService()
+	cfg := svc.Config()
+
+	// 更新配置
+	cfg.EnableFTP = servicesReq.EnableFTP
+	cfg.EnableMCP = servicesReq.EnableMCP
+	cfg.EnableWebDAV = servicesReq.EnableWebDAV
+	cfg.EnableNFS = servicesReq.EnableNFS
+
+	if servicesReq.FTPPort != "" {
+		cfg.SetFTPPort(servicesReq.FTPPort)
+	}
+	if servicesReq.WebDAVPort != "" {
+		cfg.WebDAVPort = ":" + servicesReq.WebDAVPort
+	}
+	if servicesReq.NFSPort != "" {
+		cfg.NFSPort = ":" + servicesReq.NFSPort
+	}
+
+	// 保存配置到文件
+	if err := conf.SaveConfig(); err != nil {
+		logger.Error("Failed to save config: %v", err)
+	}
+
+	logger.Info("Services settings updated")
+
+	// 直接返回完整的 JSON
+	c.JSON(consts.StatusOK, map[string]interface{}{
+		"success": true,
+	})
 }

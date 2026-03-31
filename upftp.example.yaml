@@ -6,11 +6,17 @@
 # ────────────────────────────────────────────────────────────────
 # 🌐 Server Settings
 # ────────────────────────────────────────────────────────────────
-# HTTP server port (default: 10000)
-port: "10000"
+# HTTP server port (default: 12345)
+port: "12345"
 
-# FTP server port (default: 2121, only used when enable_ftp is true)
-ftp_port: "2121"
+# FTP server port (default: 12348, only used when enable_ftp is true)
+ftp_port: "12348"
+
+# WebDAV server port (default: 12346, only used when enable_webdav is true)
+webdav_port: "12346"
+
+# NFS server port (default: 12347, only used when enable_nfs is true)
+nfs_port: "12347"
 
 # Root directory to share (use "./" for current directory)
 root: "./"
@@ -23,6 +29,12 @@ enable_ftp: false
 
 # Enable MCP (Model Context Protocol) for AI integration (Claude Desktop)
 enable_mcp: false
+
+# Enable WebDAV server (requires webdav_port)
+enable_webdav: false
+
+# Enable NFS server (requires nfs_port)
+enable_nfs: false
 
 # ────────────────────────────────────────────────────────────────
 # 🔐 FTP Credentials

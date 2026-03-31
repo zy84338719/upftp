@@ -39,6 +39,33 @@ cd /path/to/files
 # 选择正确的局域网IP地址
 ```
 
+### 5. WebDAV 服务器
+提供 WebDAV 协议访问：
+```bash
+# 启用 WebDAV 服务器
+./upftp -enable-webdav -webdav 8080 -d /path/to/share
+
+# 在文件管理器中访问: http://your-ip:8080
+```
+
+### 6. NFS 服务器
+提供 NFS 协议访问：
+```bash
+# 启用 NFS 服务器
+./upftp -enable-nfs -nfs 2049 -d /path/to/share
+
+# 在 Linux/macOS 上挂载: mount -t nfs your-ip:/share /mnt/nfs
+```
+
+### 7. AI 集成 (MCP)
+启用 MCP 服务器与 AI 助手集成：
+```bash
+# 启用 MCP 服务器
+./upftp -enable-mcp -d /path/to/share
+
+# 在 Claude Desktop 中配置 MCP 服务器
+```
+
 ## 高级配置示例
 
 ### 1. 完整配置的媒体服务器
@@ -50,6 +77,10 @@ cd /path/to/files
   -p 8080 \
   -enable-ftp \
   -ftp 2121 \
+  -enable-webdav \
+  -webdav 8081 \
+  -enable-nfs \
+  -nfs 2049 \
   -user mediauser \
   -pass SecurePass123 \
   -d /home/user/MediaLibrary \
@@ -58,6 +89,8 @@ cd /path/to/files
 echo "媒体服务器已启动"
 echo "HTTP访问: http://$(hostname -I | awk '{print $1}'):8080"
 echo "FTP访问: ftp://$(hostname -I | awk '{print $1}'):2121"
+echo "WebDAV访问: http://$(hostname -I | awk '{print $1}'):8081"
+echo "NFS访问: $(hostname -I | awk '{print $1}'):/share"
 echo "FTP用户: mediauser / SecurePass123"
 ```
 
@@ -83,30 +116,35 @@ echo "临时密码: $PASSWORD"
 echo "请将此密码安全地发送给接收方"
 ```
 
-### 3. 多目录服务配置
+### 3. 多服务配置示例
 ```bash
 #!/bin/bash
 # multi-service.sh
 
-# 启动文档服务器
-./upftp -p 8081 -d /docs -auto &
+# 启动文档服务器 (HTTP + WebDAV)
+./upftp -p 8081 -enable-webdav -webdav 8084 -d /docs -auto &
 DOC_PID=$!
 
-# 启动媒体服务器
-./upftp -p 8082 -d /media -auto &
+# 启动媒体服务器 (HTTP + FTP)
+./upftp -p 8082 -enable-ftp -ftp 2122 -d /media -auto &
 MEDIA_PID=$!
 
-# 启动下载服务器
-./upftp -p 8083 -enable-ftp -d /downloads -auto &
+# 启动下载服务器 (HTTP + FTP + NFS)
+./upftp -p 8083 -enable-ftp -ftp 2123 -enable-nfs -nfs 2050 -d /downloads -auto &
 DOWNLOAD_PID=$!
 
+# 启动 AI 集成服务器 (MCP)
+./upftp -enable-mcp -d /shared -auto &
+MCP_PID=$!
+
 echo "多服务已启动:"
-echo "文档服务: http://your-ip:8081"
-echo "媒体服务: http://your-ip:8082" 
-echo "下载服务: http://your-ip:8083 (含FTP)"
+echo "文档服务: http://your-ip:8081 (WebDAV: http://your-ip:8084)"
+echo "媒体服务: http://your-ip:8082 (FTP: ftp://your-ip:2122)"
+echo "下载服务: http://your-ip:8083 (FTP: ftp://your-ip:2123, NFS: your-ip:/share)"
+echo "AI 集成服务: MCP 服务器已启动"
 
 # 优雅退出
-trap "kill $DOC_PID $MEDIA_PID $DOWNLOAD_PID" EXIT
+trap "kill $DOC_PID $MEDIA_PID $DOWNLOAD_PID $MCP_PID" EXIT
 wait
 ```
 

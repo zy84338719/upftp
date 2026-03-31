@@ -37,12 +37,12 @@ func _handlesetftpMw() []app.HandlerFunc {
 	return nil
 }
 
-func _handlesethttpauthMw() []app.HandlerFunc {
+func _handlesetlanguageMw() []app.HandlerFunc {
 	// your code...
 	return nil
 }
 
-func _handlesetlanguageMw() []app.HandlerFunc {
+func _handlesetservicesMw() []app.HandlerFunc {
 	// your code...
 	return nil
 }
