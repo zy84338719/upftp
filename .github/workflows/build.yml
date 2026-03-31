@@ -9,6 +9,7 @@ on:
 env:
   GO_VERSION: '1.24'
   BUILD_DATE: ${{ github.event.head_commit.timestamp }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   test:
@@ -48,7 +49,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
         cache-dependency-path: web/package-lock.json
     
