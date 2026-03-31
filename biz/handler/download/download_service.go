@@ -3,10 +3,15 @@
 package download
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
@@ -52,8 +57,86 @@ func Download(ctx context.Context, c *app.RequestContext) {
 
 	// 如果是目录，返回 zip 下载
 	if info.IsDir() {
-		// TODO: 实现目录打包下载
-		c.String(consts.StatusNotImplemented, "Directory download not implemented yet")
+		// 创建 zip 压缩包
+		buf := new(bytes.Buffer)
+		zipWriter := zip.NewWriter(buf)
+
+		baseName := filepath.Base(fullPath)
+		if baseName == "" || baseName == "." {
+			baseName = "download"
+		}
+
+		err := filepath.Walk(fullPath, func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			// 计算相对路径
+			relPath, err := filepath.Rel(fullPath, path)
+			if err != nil {
+				return err
+			}
+
+			// 在 zip 中的路径
+			zipPath := filepath.Join(baseName, relPath)
+
+			if info.IsDir() {
+				// 创建目录条目
+				_, err := zipWriter.Create(zipPath + "/")
+				if err != nil {
+					return fmt.Errorf("failed to create directory in zip: %w", err)
+				}
+				return nil
+			}
+
+			// 创建文件条目
+			writer, err := zipWriter.Create(zipPath)
+			if err != nil {
+				return fmt.Errorf("failed to create file in zip: %w", err)
+			}
+
+			// 读取文件内容
+			file, err := os.Open(path)
+			if err != nil {
+				return fmt.Errorf("failed to open file: %w", err)
+			}
+			defer file.Close()
+
+			fileBytes, err := os.ReadFile(path)
+			if err != nil {
+				return fmt.Errorf("failed to read file: %w", err)
+			}
+
+			_, err = writer.Write(fileBytes)
+			if err != nil {
+				return fmt.Errorf("failed to write file to zip: %w", err)
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			logger.Error("Failed to create zip: %v", err)
+			c.String(consts.StatusInternalServerError, "Failed to create zip archive")
+			return
+		}
+
+		// 关闭 zip writer
+		err = zipWriter.Close()
+		if err != nil {
+			logger.Error("Failed to close zip: %v", err)
+			c.String(consts.StatusInternalServerError, "Failed to finalize zip archive")
+			return
+		}
+
+		// 设置响应头
+		timestamp := time.Now().Format("20060102-150405")
+		zipName := fmt.Sprintf("%s-%s.zip", baseName, timestamp)
+		c.Header("Content-Type", "application/zip")
+		c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", zipName))
+		c.Header("Content-Length", fmt.Sprintf("%d", buf.Len()))
+		c.SetStatusCode(consts.StatusOK)
+		c.Response.BodyWriter().Write(buf.Bytes())
 		return
 	}
 
