@@ -117,6 +117,11 @@ var translations = map[string]map[string]string{
 		"press_back":           "press [b] back, [q] quit",
 		"press_any_key":        "press any key to go back...",
 		"press_esc":            "press [esc] or [b] to cancel",
+		"security_key":         "security key",
+		"security_key_hint":    "required for web settings configuration",
+		"credentials_menu":     "account credentials",
+		"credentials":          "account credentials",
+		"credentials_hint":     "these credentials are used for both HTTP and FTP",
 	},
 	"zh": {
 		"tagline":              "// AI 时代的文件共享服务器",
@@ -234,6 +239,11 @@ var translations = map[string]map[string]string{
 		"press_back":           "按 [b] 返回, [q] 退出",
 		"press_any_key":        "按任意键返回...",
 		"press_esc":            "按 [esc] 或 [b] 取消",
+		"security_key":         "安全密钥",
+		"security_key_hint":    "网页设置配置需要此密钥",
+		"credentials_menu":     "账号凭据",
+		"credentials":          "账号凭据",
+		"credentials_hint":     "这些凭据同时用于 HTTP 和 FTP",
 	},
 }
 

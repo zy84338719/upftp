@@ -233,7 +233,7 @@ func (s *WebDAVServer) listDirectory(w http.ResponseWriter, r *http.Request, pat
 	for _, file := range files {
 		name := file.Name()
 		if file.IsDir() {
-			name +=("/")
+			name += ("/")
 		}
 		w.Write([]byte(fmt.Sprintf(`<li><a href="%s">%s</a></li>`, name, name)))
 	}

@@ -1,19 +1,23 @@
 # UPFTP Configuration File
 # https://github.com/zy84338719/upftp
 
-port: :10000
-ftp_port: :2121
+port: :10001
+ftp_port: :2122
+webdav_port: :8081
+nfs_port: :2050
 root: ./
 auto_select: false
-enable_ftp: false
-enable_mcp: false
-username: admin
-password: admin
+enable_ftp: true
+enable_mcp: true
+enable_webdav: true
+enable_nfs: true
+username: zhangyi
+password: zx19950124
 language: zh
 http_auth:
     enabled: false
-    username: ""
-    password: ""
+    username: zhangyi
+    password: zx19950124
 https:
     enabled: false
     cert_file: ""

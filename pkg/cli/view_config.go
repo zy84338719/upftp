@@ -12,8 +12,8 @@ func (m Model) renderConfigMenu() string {
 	w := m.panelWidth()
 
 	var rows []string
-	rows = append(rows, "  "+keyStyle.Render("[1]")+" "+t(lang, "ftp_credentials_menu"))
-	rows = append(rows, "  "+keyStyle.Render("[2]")+" "+t(lang, "http_auth_menu"))
+	rows = append(rows, "  "+keyStyle.Render("[1]")+" "+t(lang, "credentials_menu"))
+	rows = append(rows, "  "+keyStyle.Render("[2]")+" "+t(lang, "http_auth_menu")+" "+yellowStyle.Render(renderEnabled(conf.AppConfig.HTTPAuth.Enabled)))
 	rows = append(rows, "  "+keyStyle.Render("[3]")+" "+t(lang, "ftp_server_menu")+" "+yellowStyle.Render(renderEnabled(conf.AppConfig.EnableFTP)))
 	rows = append(rows, "  "+keyStyle.Render("[4]")+" "+t(lang, "mcp_server_menu")+" "+yellowStyle.Render(renderEnabled(conf.AppConfig.EnableMCP)))
 	rows = append(rows, "  "+keyStyle.Render("[5]")+" "+t(lang, "server_ports_menu"))
@@ -33,6 +33,8 @@ func (m Model) renderConfigFTP() string {
 	lines = append(lines, "  "+labelStyle.Render(fmt.Sprintf(" %-14s", t(lang, "username")+":"))+" "+conf.AppConfig.Username)
 	lines = append(lines, "  "+labelStyle.Render(fmt.Sprintf(" %-14s", t(lang, "password")+":"))+" "+maskPassword(conf.AppConfig.Password))
 	lines = append(lines, "")
+	lines = append(lines, "  "+dimStyle.Render(t(lang, "credentials_hint")))
+	lines = append(lines, "")
 
 	if m.configStep == 0 {
 		lines = append(lines, "  "+labelStyle.Render(t(lang, "username")+":")+" "+m.input.View())
@@ -40,7 +42,7 @@ func (m Model) renderConfigFTP() string {
 		lines = append(lines, "  "+labelStyle.Render(t(lang, "password")+":")+" "+m.input.View())
 	}
 
-	return "  " + dimStyle.Render(t(lang, "ftp_credentials_menu")) + "\n" + panel(w, strings.Join(lines, "\n"))
+	return "  " + dimStyle.Render(t(lang, "credentials_menu")) + "\n" + panel(w, strings.Join(lines, "\n"))
 }
 
 func (m Model) renderConfigHTTP() string {
@@ -139,10 +141,12 @@ func (m Model) renderConfigView() string {
 	lines = append(lines, "    "+labelStyle.Render(fmt.Sprintf(" %-14s", t(lang, "root_directory")+":"))+" "+truncatePath(conf.AppConfig.Root, 36))
 	lines = append(lines, "    "+labelStyle.Render(fmt.Sprintf(" %-14s", t(lang, "auto_select_ip")+":"))+" "+fmt.Sprintf("%v", conf.AppConfig.AutoSelect))
 	lines = append(lines, "")
-	lines = append(lines, "  "+labelStyle.Render(t(lang, "ftp_server")+":"))
-	lines = append(lines, "    "+labelStyle.Render(fmt.Sprintf(" %-14s", t(lang, "enabled")+":"))+" "+renderEnabled(conf.AppConfig.EnableFTP))
+	lines = append(lines, "  "+labelStyle.Render(t(lang, "credentials")+":"))
 	lines = append(lines, "    "+labelStyle.Render(fmt.Sprintf(" %-14s", t(lang, "username")+":"))+" "+conf.AppConfig.Username)
 	lines = append(lines, "    "+labelStyle.Render(fmt.Sprintf(" %-14s", t(lang, "password")+":"))+" "+maskPassword(conf.AppConfig.Password))
+	lines = append(lines, "")
+	lines = append(lines, "  "+labelStyle.Render(t(lang, "ftp_server")+":"))
+	lines = append(lines, "    "+labelStyle.Render(fmt.Sprintf(" %-14s", t(lang, "enabled")+":"))+" "+renderEnabled(conf.AppConfig.EnableFTP))
 	lines = append(lines, "")
 	lines = append(lines, "  "+labelStyle.Render(t(lang, "mcp_server")+":"))
 	lines = append(lines, "    "+labelStyle.Render(fmt.Sprintf(" %-14s", t(lang, "enabled")+":"))+" "+renderEnabled(conf.AppConfig.EnableMCP))

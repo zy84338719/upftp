@@ -6,11 +6,12 @@
 
 ### 核心功能
 - **跨平台支持**: Linux、macOS、Windows 三平台原生支持
-- **双协议服务**: HTTP Web界面 + FTP服务器
+- **多协议服务**: HTTP Web界面 + FTP服务器 + WebDAV服务器 + NFS服务器
 - **文件预览**: 支持图片、视频、音频、文本和代码文件预览
 - **文件夹下载**: 自动打包为ZIP文件下载
 - **搜索功能**: 实时文件名和类型搜索
-- **命令行界面**: 交互式命令行管理界面
+- **命令行界面**: 交互式命令行管理界面，带有 ASCII 艺术标志横幅
+- **AI集成**: 支持 Model Context Protocol (MCP)，可与 AI 助手集成
 
 ### 支持的文件类型
 
@@ -147,8 +148,17 @@ upftp -auto
 # 启用FTP服务器
 upftp -enable-ftp
 
+# 启用WebDAV服务器
+upftp -enable-webdav
+
+# 启用NFS服务器
+upftp -enable-nfs
+
+# 启用MCP服务器 (AI集成)
+upftp -enable-mcp
+
 # 完整配置
-upftp -p 8080 -enable-ftp -ftp 2121 -user admin -pass secret -d /home/shared
+upftp -p 8080 -enable-ftp -ftp 2121 -enable-webdav -webdav 8081 -enable-nfs -nfs 2049 -user admin -pass secret -d /home/shared
 ```
 
 ### 完整参数列表
@@ -157,9 +167,14 @@ upftp -p 8080 -enable-ftp -ftp 2121 -user admin -pass secret -d /home/shared
 |------|------|--------|
 | `-p <port>` | HTTP服务器端口 | 10000 |
 | `-ftp <port>` | FTP服务器端口 | 2121 |
+| `-webdav <port>` | WebDAV服务器端口 | 8080 |
+| `-nfs <port>` | NFS服务器端口 | 2049 |
 | `-d <dir>` | 共享目录 | 当前目录 |
 | `-auto` | 自动选择网络接口 | false |
 | `-enable-ftp` | 启用FTP服务器 | false |
+| `-enable-webdav` | 启用WebDAV服务器 | false |
+| `-enable-nfs` | 启用NFS服务器 | false |
+| `-enable-mcp` | 启用MCP服务器 (AI集成) | false |
 | `-user <name>` | FTP用户名 | admin |
 | `-pass <pass>` | FTP密码 | admin |
 | `-h` | 显示帮助信息 | - |
@@ -176,13 +191,43 @@ ftp 192.168.1.100 2121
 # 密码: admin
 ```
 
+### WebDAV客户端
+```bash
+# 使用 curl 测试
+curl http://192.168.1.100:8080
+
+# 在文件管理器中访问
+# Windows: 映射网络驱动器 -> http://192.168.1.100:8080
+# macOS: 前往 -> 连接服务器 -> http://192.168.1.100:8080
+# Linux: 挂载 WebDAV
+mount -t davfs http://192.168.1.100:8080 /mnt/webdav
+```
+
+### NFS客户端
+```bash
+# Linux/macOS
+mount -t nfs 192.168.1.100:/share /mnt/nfs
+
+# Windows
+# 映射网络驱动器 -> \\192.168.1.100\share
+```
+
 ### 命令行下载
 ```bash
 # 下载文件
 curl -O http://192.168.1.100:10000/download/filename
 wget http://192.168.1.100:10000/download/filename
 
+# 下载并重命名
+curl -o newname.txt http://192.168.1.100:10000/download/filename.txt
+wget -O newname.txt http://192.168.1.100:10000/download/filename.txt
+
+# 显示进度
+curl -# -O http://192.168.1.100:10000/download/largefile.zip
+wget --progress=bar http://192.168.1.100:10000/download/largefile.zip
+
 # 下载文件夹（自动打包为ZIP）
+curl -O http://192.168.1.100:10000/download/foldername
 wget http://192.168.1.100:10000/download/foldername
 ```
 

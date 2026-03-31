@@ -15,14 +15,14 @@ var std *zap.Logger
 
 // LoggerConfig 日志配置结构体
 type LoggerConfig struct {
-	Level      string `yaml:"level"`      // 日志级别: debug, info, warn, error
-	Format     string `yaml:"format"`     // 日志格式: text, json
-	Output     string `yaml:"output"`     // 输出方式: console, file, both
-	File       string `yaml:"file"`       // 日志文件路径
-	MaxSize    int    `yaml:"max_size"`   // 最大文件大小(MB)
+	Level      string `yaml:"level"`       // 日志级别: debug, info, warn, error
+	Format     string `yaml:"format"`      // 日志格式: text, json
+	Output     string `yaml:"output"`      // 输出方式: console, file, both
+	File       string `yaml:"file"`        // 日志文件路径
+	MaxSize    int    `yaml:"max_size"`    // 最大文件大小(MB)
 	MaxBackups int    `yaml:"max_backups"` // 最大备份数量
-	MaxAge     int    `yaml:"max_age"`    // 最大保留天数
-	Compress   bool   `yaml:"compress"`   // 是否压缩
+	MaxAge     int    `yaml:"max_age"`     // 最大保留天数
+	Compress   bool   `yaml:"compress"`    // 是否压缩
 }
 
 // Init 初始化日志系统

@@ -22,7 +22,7 @@ func Register(r *server.Hertz) {
 		_api.GET("/settings", append(_handlegetsettingsMw(), settings.HandleGetSettings)...)
 		_settings := _api.Group("/settings", _settingsMw()...)
 		_settings.POST("/ftp", append(_handlesetftpMw(), settings.HandleSetFTP)...)
-		_settings.POST("/http-auth", append(_handlesethttpauthMw(), settings.HandleSetHTTPAuth)...)
 		_settings.POST("/language", append(_handlesetlanguageMw(), settings.HandleSetLanguage)...)
+		_settings.POST("/services", append(_handlesetservicesMw(), settings.HandleSetServices)...)
 	}
 }

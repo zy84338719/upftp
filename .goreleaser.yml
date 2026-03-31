@@ -1,11 +1,10 @@
-version: 1
+version: 2
 
-before:
-  hooks:
-    - go mod tidy
-
+project_name: upftp
 builds:
-  - env:
+  - id: upftp
+    main: ./cmd/server/main.go
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
@@ -26,13 +25,18 @@ builds:
       - -X main.LastCommit={{.ShortCommit}}
       - -X main.BuildDate={{.Date}}
     binary: upftp
+    mod_timestamp: '{{ .CommitTimestamp }}'
 
 archives:
-  - format: tar.gz
+  - id: upftp-archive
+    builds:
+      - upftp
+    format: tar.gz
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
     format_overrides:
       - goos: windows
@@ -40,9 +44,13 @@ archives:
     files:
       - README.md
       - LICENSE.txt
+      - upftp.example.yaml
+    wrap_in_directory: true
 
 nfpms:
   - id: upftp
+    builds:
+      - upftp
     package_name: upftp
     vendor: Zhang Yi
     homepage: https://github.com/zy84338719/upftp
@@ -63,6 +71,8 @@ nfpms:
       - src: packaging/config/upftp.conf
         dst: /etc/upftp/upftp.conf
         type: config|noreplace
+      - src: upftp.example.yaml
+        dst: /etc/upftp/upftp.example.yaml
     scripts:
       postinstall: packaging/debian/postinst
       preremove: packaging/debian/prerm
@@ -73,6 +83,9 @@ nfpms:
       lintian_overrides:
         - statically-linked-binary
         - changelog-file-missing-in-native-package
+    rpm:
+      signature:
+        disable: true
 
 brews:
   - name: upftp
@@ -83,11 +96,15 @@ brews:
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     folder: Formula
     homepage: https://github.com/zy84338719/upftp
-    description: Modern cross-platform file sharing server
+    description: Modern cross-platform file sharing server with HTTP and FTP support
     license: MIT
     skip_upload: false
     install: |-
       bin.install "upftp"
+      
+      # Create configuration directory
+      (buildpath/"upftp.example.yaml").write_file
+      etc.install "upftp.example.yaml" => "upftp/upftp.example.yaml"
     service: |-
       run [opt_bin/"upftp", "-auto", "-d", var/"upftp"]
       keep_alive true
@@ -102,20 +119,28 @@ scoops:
       owner: zy84338719
       name: scoop-bucket
       branch: main
-      token: "{{ .Env.SCOP_GITHUB_TOKEN }}"
+      token: "{{ .Env.SCOOP_GITHUB_TOKEN }}"
     folder: bucket
     homepage: https://github.com/zy84338719/upftp
-    description: Modern cross-platform file sharing server
+    description: Modern cross-platform file sharing server with HTTP and FTP support
     license: MIT
     persist:
       - data
+      - config
+    post_install: |
+      # Create example configuration file
+      New-Item -ItemType Directory -Path "$env:SCOOP\apps\upftp\current\config" -Force | Out-Null
+      Copy-Item -Path "$env:SCOOP\apps\upftp\current\upftp.example.yaml" -Destination "$env:SCOOP\apps\upftp\current\config\upftp.yaml" -Force
 
 checksum:
   name_template: 'checksums.txt'
+  algorithm: sha256
 
+# Snapshot configuration
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  name_template: "{{ incpatch .Version }}-next-{{ .ShortCommit }}"
 
+# Changelog configuration
 changelog:
   sort: asc
   use: github
@@ -124,6 +149,7 @@ changelog:
       - '^docs:'
       - '^test:'
       - '^chore:'
+      - '^ci:'
       - merge conflict
       - Merge pull request
       - Merge remote-tracking branch
@@ -138,10 +164,25 @@ changelog:
     - title: '📝 Documentation'
       regexp: "^.*docs[(\\w)]*:+.*$"
       order: 2
+    - title: '🔧 Maintenance'
+      regexp: "^.*chore[(\\w)]*:+.*$"
+      order: 3
+    - title: '🔄 CI/CD'
+      regexp: "^.*ci[(\\w)]*:+.*$"
+      order: 4
     - title: '🔧 Others'
       order: 999
 
+# Release configuration
 release:
+  github:
+    owner: zy84338719
+    name: upftp
+  draft: false
+  prerelease: auto
+  discussion_category_name: releases
+  extra_files:
+    - glob: ./upftp.example.yaml
   footer: |
     ## Installation
     
@@ -155,6 +196,7 @@ release:
     ```bash
     # Download .deb from assets below
     sudo dpkg -i upftp_*.deb
+    sudo systemctl enable upftp
     sudo systemctl start upftp
     ```
     
@@ -162,6 +204,7 @@ release:
     ```bash
     # Download .rpm from assets below
     sudo rpm -i upftp-*.rpm
+    sudo systemctl enable upftp
     sudo systemctl start upftp
     ```
     
@@ -175,3 +218,15 @@ release:
     Download the binary for your platform from the assets below.
 
     Full documentation: https://github.com/zy84338719/upftp#readme
+
+# Before hooks
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+
+# After hooks
+after:
+  hooks:
+    - echo "Release completed successfully!"
+
