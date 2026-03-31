@@ -1,10 +1,10 @@
 # UPFTP Configuration File
 # https://github.com/zy84338719/upftp
 
-port: :10001
-ftp_port: :2122
-webdav_port: :8081
-nfs_port: :2050
+port: :12345
+ftp_port: :12346
+webdav_port: :12347
+nfs_port: : 12348
 root: ./
 auto_select: false
 enable_ftp: true

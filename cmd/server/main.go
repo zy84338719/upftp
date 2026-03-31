@@ -3,17 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"os"
 	"os/signal"
 	"runtime"
-	"strings"
 	"syscall"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
-	"github.com/zy84338719/upftp/biz/handler/index"
+	"github.com/zy84338719/upftp/biz/handler/static"
 	"github.com/zy84338719/upftp/biz/router"
 	"github.com/zy84338719/upftp/biz/service/ftp"
 	"github.com/zy84338719/upftp/biz/service/nfs"
@@ -33,59 +31,6 @@ var (
 	ProjectURL  = "https://github.com/zy84338719/upftp"
 	ProjectName = "UPFTP"
 )
-
-// serveEmbeddedStatic 从嵌入文件系统提供静态文件
-func serveEmbeddedStatic(ctx context.Context, c *app.RequestContext) {
-	filepath := c.Param("filepath")
-	if filepath == "" {
-		// 从完整 URI 路径提取
-		filepath = string(c.Request.URI().Path())
-	}
-
-	// 移除路径前导的斜杠（如果有）
-	filepath = strings.TrimPrefix(filepath, "/")
-
-	// 如果路径以 assets/ 开头，直接使用；否则添加 assets/ 前缀
-	var fullPath string
-	if strings.HasPrefix(filepath, "assets/") {
-		fullPath = filepath
-	} else {
-		fullPath = "assets/" + filepath
-	}
-
-	// 调试日志
-	logger.Debug("serveEmbeddedStatic: filepath=%s, fullPath=%s", filepath, fullPath)
-
-	// 从嵌入文件系统读取（GetTemplatesFS 已经返回 templates 子目录）
-	templateFS := index.GetTemplatesFS()
-	data, err := fs.ReadFile(templateFS, fullPath)
-	if err != nil {
-		// 如果文件不存在，返回 404
-		c.String(consts.StatusNotFound, "File not found: "+fullPath)
-		return
-	}
-
-	// 设置正确的 Content-Type
-	var contentType string
-	switch {
-	case strings.HasSuffix(fullPath, ".css"):
-		contentType = "text/css"
-	case strings.HasSuffix(fullPath, ".js"):
-		contentType = "application/javascript"
-	case strings.HasSuffix(fullPath, ".ico"):
-		contentType = "image/x-icon"
-	case strings.HasSuffix(fullPath, ".png"):
-		contentType = "image/png"
-	case strings.HasSuffix(fullPath, ".jpg"), strings.HasSuffix(fullPath, ".jpeg"):
-		contentType = "image/jpeg"
-	default:
-		contentType = "application/octet-stream"
-	}
-
-	c.Header("Content-Type", contentType)
-	c.SetStatusCode(consts.StatusOK)
-	c.Response.BodyWriter().Write(data)
-}
 
 func main() {
 	conf.Init(Version, LastCommit, BuildDate, GoVersion, Platform, ProjectURL, ProjectName)
@@ -127,19 +72,13 @@ func main() {
 		server.WithHostPorts(fmt.Sprintf(":%d", conf.AppConfig.GetHTTPPort())),
 	)
 
-	// 注册静态文件路由 - 处理 /assets/*
-	h.GET("/assets/*filepath", serveEmbeddedStatic)
-	h.GET("/favicon.ico", func(ctx context.Context, c *app.RequestContext) {
-		templateFS := index.GetTemplatesFS()
-		data, err := fs.ReadFile(templateFS, "favicon.ico")
-		if err != nil {
-			c.String(consts.StatusNotFound, "File not found")
-			return
-		}
-		c.Header("Content-Type", "image/x-icon")
-		c.SetStatusCode(consts.StatusOK)
-		c.Response.BodyWriter().Write(data)
+	// 注册测试路由
+	h.GET("/test", func(ctx context.Context, c *app.RequestContext) {
+		c.String(consts.StatusOK, "Test route works!")
 	})
+
+	// 注册静态文件路由
+	static.RegisterStaticRoutes(h)
 
 	// 注册路由（包括根路径 / 的处理）
 	router.GeneratedRegister(h)

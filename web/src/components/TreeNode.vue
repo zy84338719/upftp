@@ -55,10 +55,12 @@ const isOpen = ref(
 
 function handleClick(e: Event) {
   e.stopPropagation()
-  if (hasChildren.value) {
-    isOpen.value = !isOpen.value
+  if (props.node.isDir) {
+    if (hasChildren.value) {
+      isOpen.value = !isOpen.value
+    }
+    emit('navigate', props.node.path)
   }
-  emit('navigate', props.node.path)
 }
 </script>
 

@@ -26,21 +26,23 @@ deps:
 	$(GOMOD) download
 	$(GOMOD) tidy
 
+MAIN_PATH = ./cmd/server
+
 build:
-	$(GOBUILD) $(BUILD_FLAGS) -o $(BINARY_NAME) ./
+	$(GOBUILD) $(BUILD_FLAGS) -o $(BINARY_NAME) $(MAIN_PATH)
 
 build-all: build-linux build-darwin build-windows
 
 build-linux:
-	GOOS=linux GOARCH=amd64 $(GOBUILD) $(BUILD_FLAGS) -o dist/$(BINARY_NAME)_linux_amd64 ./
-	GOOS=linux GOARCH=arm64 $(GOBUILD) $(BUILD_FLAGS) -o dist/$(BINARY_NAME)_linux_arm64 ./
+	GOOS=linux GOARCH=amd64 $(GOBUILD) $(BUILD_FLAGS) -o dist/$(BINARY_NAME)_linux_amd64 $(MAIN_PATH)
+	GOOS=linux GOARCH=arm64 $(GOBUILD) $(BUILD_FLAGS) -o dist/$(BINARY_NAME)_linux_arm64 $(MAIN_PATH)
 
 build-darwin:
-	GOOS=darwin GOARCH=amd64 $(GOBUILD) $(BUILD_FLAGS) -o dist/$(BINARY_NAME)_darwin_amd64 ./
-	GOOS=darwin GOARCH=arm64 $(GOBUILD) $(BUILD_FLAGS) -o dist/$(BINARY_NAME)_darwin_arm64 ./
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) $(BUILD_FLAGS) -o dist/$(BINARY_NAME)_darwin_amd64 $(MAIN_PATH)
+	GOOS=darwin GOARCH=arm64 $(GOBUILD) $(BUILD_FLAGS) -o dist/$(BINARY_NAME)_darwin_arm64 $(MAIN_PATH)
 
 build-windows:
-	GOOS=windows GOARCH=amd64 $(GOBUILD) $(BUILD_FLAGS) -o dist/$(BINARY_NAME)_windows_amd64.exe ./
+	GOOS=windows GOARCH=amd64 $(GOBUILD) $(BUILD_FLAGS) -o dist/$(BINARY_NAME)_windows_amd64.exe $(MAIN_PATH)
 
 test:
 	$(GOTEST) -v -race -coverprofile=coverage.out ./...
