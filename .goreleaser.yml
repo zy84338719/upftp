@@ -112,19 +112,21 @@ brews:
     test: |-
       system "#{bin}/upftp", "-h"
 
-scoops:
-  - repository:
-      owner: zy84338719
-      name: scoop-bucket
-      branch: main
-      token: "{{ .Env.SCOOP_GITHUB_TOKEN }}"
-    directory: bucket
-    homepage: https://github.com/zy84338719/upftp
-    description: Modern cross-platform file sharing server with HTTP and FTP support
-    license: MIT
-    persist:
-      - data
-      - config
+# Scoop disabled - requires SCOOP_GITHUB_TOKEN secret
+# Uncomment to enable Scoop for Windows users
+# scoops:
+#   - repository:
+#       owner: zy84338719
+#       name: scoop-bucket
+#       branch: main
+#       token: "{{ .Env.SCOOP_GITHUB_TOKEN }}"
+#   directory: bucket
+#   homepage: https://github.com/zy84338719/upftp
+#   description: Modern cross-platform file sharing server with HTTP and FTP support
+#   license: MIT
+#   persist:
+#     - data
+#     - config
 
 checksum:
   name_template: 'checksums.txt'
