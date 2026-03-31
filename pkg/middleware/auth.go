@@ -18,14 +18,14 @@ func AuthMiddleware(cfg *conf.Config) app.HandlerFunc {
 			c.Next(ctx)
 			return
 		}
-		
+
 		// 跳过公开路由
 		path := string(c.Request.URI().Path())
 		if path == "/api/settings" || path == "/api/login" {
 			c.Next(ctx)
 			return
 		}
-		
+
 		if !cfg.HTTPAuth.Enabled {
 			c.Next(ctx)
 			return
@@ -47,7 +47,7 @@ func AuthMiddleware(cfg *conf.Config) app.HandlerFunc {
 			if len(parts) == 2 {
 				authType := parts[0]
 				authValue := parts[1]
-				
+
 				if authType == "Basic" {
 					// Basic auth 已经处理过了
 				} else if authType == "Bearer" {
