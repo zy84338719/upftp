@@ -4,15 +4,21 @@ import (
 	"testing"
 )
 
-func TestGetLocalIPs(t *testing.T) {
-	// Test GetLocalIPs function
-	ips, err := GetLocalIPs()
-	if err != nil {
-		t.Errorf("GetLocalIPs() error = %v, want nil", err)
+func TestGetAvailableIPs(t *testing.T) {
+	// Test GetAvailableIPs function
+	ips := GetAvailableIPs()
+
+	// The function may return nil or empty on machines without network
+	// Just verify it doesn't panic and returns a valid type
+	if ips == nil {
+		// No IPs available, which is acceptable in some environments
+		return
 	}
 
-	// Check that at least one IP is returned
-	if len(ips) == 0 {
-		t.Errorf("GetLocalIPs() returned no IPs")
+	// If IPs are returned, verify they're valid strings
+	for _, ip := range ips {
+		if ip == "" {
+			t.Errorf("GetAvailableIPs() returned empty IP string")
+		}
 	}
 }
