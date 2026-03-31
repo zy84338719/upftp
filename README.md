@@ -124,7 +124,29 @@
 
 ## 🚀 快速开始
 
-### 方式一：直接下载（推荐）
+### 方式一：包管理器安装（推荐）
+
+#### macOS (Homebrew)
+
+```bash
+# 添加 tap
+brew tap zy84338719/tap
+
+# 安装
+brew install upftp
+```
+
+#### Windows (Scoop)
+
+```powershell
+# 添加 bucket
+scoop bucket add upftp https://github.com/zy84338719/scoop-bucket
+
+# 安装
+scoop install upftp
+```
+
+### 方式二：直接下载
 
 从 [Releases 页面](https://github.com/zy84338719/upftp/releases) 下载对应平台的预编译二进制：
 
@@ -571,7 +593,29 @@ make fmt
 
 ## 🚀 Quick Start
 
-### Option 1: Download Binary (Recommended)
+### Option 1: Package Manager (Recommended)
+
+#### macOS (Homebrew)
+
+```bash
+# Add tap
+brew tap zy84338719/tap
+
+# Install
+brew install upftp
+```
+
+#### Windows (Scoop)
+
+```powershell
+# Add bucket
+scoop bucket add upftp https://github.com/zy84338719/scoop-bucket
+
+# Install
+scoop install upftp
+```
+
+### Option 2: Download Binary
 
 Download the pre-built binary for your platform from the [Releases page](https://github.com/zy84338719/upftp/releases):
 
