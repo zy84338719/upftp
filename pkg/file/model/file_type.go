@@ -229,12 +229,9 @@ func GetMimeType(fileType FileType) string {
 }
 
 func CanPreviewFile(fileType FileType) bool {
-	switch fileType {
-	case FileTypeImage, FileTypeText, FileTypeCode, FileTypeVideo, FileTypeAudio:
-		return true
-	default:
-		return false
-	}
+	// 所有文件类型都支持预览（目录除外）
+	// 预览失败时会显示错误信息
+	return true
 }
 
 func FormatFileSize(size int64) string {

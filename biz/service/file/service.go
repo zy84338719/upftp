@@ -11,11 +11,11 @@ import (
 
 type Service struct {
 	cfg      *conf.Config
+	fileSvc  *FileService
 	serverIP string
 	httpPort int
 	ftpPort  int
 	root     string
-	fileSvc  *FileService
 }
 
 func NewService(cfg *conf.Config) *Service {
@@ -35,11 +35,11 @@ func (s *Service) SetServerInfo(ip string, httpPort, ftpPort int, root string) {
 	s.root = root
 }
 
-func (s *Service) ServerIP() string         { return s.serverIP }
-func (s *Service) HTTPPort() int            { return s.httpPort }
-func (s *Service) FTPPort() int             { return s.ftpPort }
-func (s *Service) Root() string             { return s.root }
-func (s *Service) Config() *conf.Config     { return s.cfg }
+func (s *Service) ServerIP() string     { return s.serverIP }
+func (s *Service) HTTPPort() int        { return s.httpPort }
+func (s *Service) FTPPort() int         { return s.ftpPort }
+func (s *Service) Root() string         { return s.root }
+func (s *Service) Config() *conf.Config { return s.cfg }
 
 // --- File Operations ---
 
@@ -48,91 +48,43 @@ func (s *Service) ListFiles(path string) ([]model.FileInfo, error) {
 }
 
 func (s *Service) ListFilesLegacy(path string) ([]model.LegacyFileInfo, error) {
-	files, err := s.fileSvc.ListFiles(path)
-	if err != nil {
-		return nil, err
-	}
-	legacy := make([]model.LegacyFileInfo, 0, len(files))
-	for _, f := range files {
-		legacy = append(legacy, model.NewLegacyFileInfo(f))
-	}
-	return legacy, nil
+	return s.fileSvc.ListFilesLegacy(path)
 }
 
-func (s *Service) Upload(path string, reader io.Reader, size int64) error {
-	return s.fileSvc.Upload(path, reader, size)
+func (s *Service) GetFile(path string) (io.ReadCloser, int64, string, error) {
+	return s.fileSvc.GetFile(path)
 }
 
-func (s *Service) Download(path string) (string, error) {
-	return s.fileSvc.Download(path)
+func (s *Service) Upload(path string, content io.Reader, size int64) error {
+	return s.fileSvc.Upload(path, content, size)
 }
 
 func (s *Service) Delete(path string) error {
 	return s.fileSvc.Delete(path)
 }
 
-func (s *Service) Rename(path string, newName string) error {
-	return s.fileSvc.Rename(path, newName)
-}
-
-func (s *Service) Move(src string, dst string) error {
-	return s.fileSvc.Move(src, dst)
-}
-
-func (s *Service) Copy(src string, dst string) error {
-	return s.fileSvc.Copy(src, dst)
-}
-
 func (s *Service) CreateFolder(path string) error {
 	return s.fileSvc.CreateFolder(path)
 }
 
-func (s *Service) Stat(path string) (os.FileInfo, error) {
-	return s.fileSvc.Stat(path)
+func (s *Service) Rename(oldPath, newName string) error {
+	return s.fileSvc.Rename(oldPath, newName)
 }
 
-func (s *Service) SafePath(relativePath string) (string, error) {
-	return s.fileSvc.SafePath(relativePath)
+func (s *Service) BuildTree(rootPath string, depth int) (*model.TreeNode, error) {
+	return s.fileSvc.BuildTree(rootPath, depth)
 }
-
-func (s *Service) OpenFile(path string) (*os.File, error) {
-	return s.fileSvc.OpenFile(path)
-}
-
-func (s *Service) CreateFileForWrite(path string) (*os.File, error) {
-	return s.fileSvc.CreateFileForWrite(path)
-}
-
-func (s *Service) ReadFileContent(path string) ([]byte, error) {
-	return s.fileSvc.ReadFileContent(path)
-}
-
-func (s *Service) WriteFileContent(path string, content []byte) error {
-	return s.fileSvc.WriteFileContent(path, content)
-}
-
-func (s *Service) ListDir(path string) ([]os.DirEntry, error) {
-	return s.fileSvc.ListDir(path)
-}
-
-func (s *Service) BuildTree(path string, depth int) (*model.TreeNode, error) {
-	return s.fileSvc.BuildTree(path, depth)
-}
-
-func (s *Service) SearchFiles(pattern string, path string) ([]string, error) {
-	return s.fileSvc.SearchFiles(pattern, path)
-}
-
-// --- Upload Config ---
 
 func (s *Service) UploadEnabled() bool {
 	return s.cfg.Upload.Enabled
 }
 
-// --- Server Info ---
-
 func (s *Service) GetServerInfo() map[string]interface{} {
 	return map[string]interface{}{
+		"ip":          s.serverIP,
+		"httpPort":    s.httpPort,
+		"ftpPort":     s.ftpPort,
+		"root":        s.root,
 		"version":     s.cfg.Version,
 		"buildDate":   s.cfg.BuildDate,
 		"goVersion":   s.cfg.GoVersion,
@@ -160,6 +112,7 @@ func (s *Service) GetIndexPageData(files []model.LegacyFileInfo) map[string]inte
 		"Language":      s.cfg.GetLanguage(),
 		"HTTPAuthOn":    s.cfg.HTTPAuth.Enabled,
 		"HTTPAuthUser":  s.cfg.HTTPAuth.Username,
+		"HTTPAuthPass":  s.cfg.HTTPAuth.Password,
 	}
 }
 
@@ -177,4 +130,9 @@ type ServerInfo struct {
 	HTTPPort int
 	FTPPort  int
 	Root     string
+}
+
+// Stat 获取文件信息
+func (s *Service) Stat(path string) (os.FileInfo, error) {
+	return s.fileSvc.Stat(path)
 }

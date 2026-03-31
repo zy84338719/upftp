@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/url"
-	"strconv"
+	"sync"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
@@ -20,12 +20,70 @@ import (
 	"github.com/zy84338719/upftp/pkg/logger"
 )
 
-// 初始化Service实例
-var svc = file.NewService(conf.AppConfig)
+// 延迟初始化Service实例
+var (
+	svc            *file.Service
+	svcOnce        sync.Once
+	templateCache  *template.Template
+	templateOnce   sync.Once
+)
+
+func getService() *file.Service {
+	svcOnce.Do(func() {
+		svc = file.NewService(conf.AppConfig)
+	})
+	return svc
+}
+
+// getTemplateContent 从嵌入的文件系统读取 index.html 内容
+func getTemplateContent() string {
+	templateOnce.Do(func() {
+		// 从嵌入的文件系统读取
+		content, err := ReadTemplateFile("index.html")
+		if err == nil {
+			logger.Info("Loaded index.html from embedded FS (%d bytes)", len(content))
+			return
+		}
+		logger.Error("Failed to read index.html from embedded FS: %v", err)
+	})
+
+	// 总是从嵌入文件系统读取
+	content, err := ReadTemplateFile("index.html")
+	if err == nil {
+		return string(content)
+	}
+
+	// 如果找不到文件，返回一个简单的 HTML
+	logger.Error("Template file not found in embedded FS, using embedded template")
+	return `<!DOCTYPE html>
+<html>
+<head><title>UPFTP</title></head>
+<body>
+	<h1>UPFTP File Manager</h1>
+	<p>Template file not found. Please rebuild the binary.</p>
+</body>
+</html>`
+}
 
 // HandleIndexPage .
 // @router / [GET]
 func HandleIndexPage(ctx context.Context, c *app.RequestContext) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("Panic in HandleIndexPage: %v", r)
+			c.String(consts.StatusInternalServerError, "Internal error: %v", r)
+		}
+	}()
+
+	svc := getService()
+
+	// 检查 svc 是否为 nil
+	if svc == nil {
+		logger.Error("Service is nil")
+		c.String(consts.StatusInternalServerError, "Service not initialized")
+		return
+	}
+
 	legacyFiles, err := svc.ListFilesLegacy("/")
 	if err != nil {
 		logger.Error("Failed to list root files: %v", err)
@@ -34,6 +92,23 @@ func HandleIndexPage(ctx context.Context, c *app.RequestContext) {
 
 	data := svc.GetIndexPageData(legacyFiles)
 
+	// 将配置转换为 JSON
+	configJSON, _ := json.Marshal(map[string]interface{}{
+		"language":     data["Language"],
+		"httpAuthOn":   data["HTTPAuthOn"],
+		"httpAuthUser": data["HTTPAuthUser"],
+		"httpAuthPass": data["HTTPAuthPass"],
+		"files":        data["Files"],
+		"currentPath":  data["CurrentPath"],
+	})
+
+	// 准备模板数据
+	templateData := struct {
+		ConfigJSON template.JS
+	}{
+		ConfigJSON: template.JS(configJSON),
+	}
+
 	funcMap := template.FuncMap{
 		"json": func(v interface{}) template.JS {
 			b, _ := json.Marshal(v)
@@ -41,16 +116,22 @@ func HandleIndexPage(ctx context.Context, c *app.RequestContext) {
 		},
 	}
 
-	tmpl, err := template.New("index").Funcs(funcMap).ParseFS(getTemplatesFS(), "index.html")
+	// 读取模板内容
+	templateContent := getTemplateContent()
+
+	// 解析模板
+	tmpl, err := template.New("index").Funcs(funcMap).Parse(templateContent)
 	if err != nil {
-		c.String(consts.StatusInternalServerError, "Template parse error: "+err.Error())
 		logger.Error("Failed to parse index template: %v", err)
+		c.String(consts.StatusInternalServerError, "Template parse error: "+err.Error())
 		return
 	}
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	if err := tmpl.Execute(c.Response.BodyWriter(), data); err != nil {
+	if err := tmpl.Execute(c.Response.BodyWriter(), templateData); err != nil {
 		logger.Error("Failed to execute index template: %v", err)
+		c.String(consts.StatusInternalServerError, "Template execute error: "+err.Error())
+		return
 	}
 }
 
@@ -65,7 +146,7 @@ func HandleServerInfo(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	info := svc.GetServerInfo()
+	info := getService().GetServerInfo()
 	// 转换为 map[string]string
 	infoStr := make(map[string]string)
 	for k, v := range info {
@@ -89,31 +170,41 @@ func HandleFileListAPI(ctx context.Context, c *app.RequestContext) {
 	}
 
 	path := c.DefaultQuery("path", "/")
-	if path == "" {
+	// 处理无效路径
+	if path == "" || path == "undefined" || path == "null" {
 		path = "/"
 	}
 
-	files, err := svc.ListFilesLegacy(path)
+	files, err := getService().ListFilesLegacy(path)
 	if err != nil {
-		c.String(consts.StatusInternalServerError, err.Error())
+		logger.Error("Failed to list files for path '%s': %v", path, err)
+		c.JSON(consts.StatusOK, &index.ListFilesLegacyResponse{
+			Files: []map[string]string{},
+		})
 		return
 	}
 
-	// 转换为响应格式
-	fileList := make([]map[string]string, 0, len(files))
+	// 转换为响应格式（使用 interface{} 支持多种类型）
+	fileList := make([]map[string]interface{}, 0, len(files))
 	for _, f := range files {
-		fileList = append(fileList, map[string]string{
-			"name":    f.Name,
-			"size":    f.Size,
-			"modTime": f.ModTime,
-			"isDir":   strconv.FormatBool(f.IsDir),
+		fileList = append(fileList, map[string]interface{}{
+			"name":       f.Name,
+			"size":       f.Size,
+			"modTime":    f.ModTime,
+			"isDir":      f.IsDir,
+			"path":       f.Path,
+			"canPreview": f.CanPreview,
+			"fileType":   int(f.FileType),
+			"icon":       f.Icon,
+			"mimeType":   f.MimeType,
 		})
 	}
 
-	resp := &index.ListFilesLegacyResponse{
-		Files: fileList,
-	}
-	c.JSON(consts.StatusOK, resp)
+	// 直接返回完整的 JSON，不使用 thrift 生成的结构体
+	c.JSON(consts.StatusOK, map[string]interface{}{
+		"files": fileList,
+		"path":  path,
+	})
 }
 
 // HandleDirectoryTree .
@@ -128,23 +219,31 @@ func HandleDirectoryTree(ctx context.Context, c *app.RequestContext) {
 	}
 
 	path := c.DefaultQuery("path", "/")
-	if path == "" {
+	// 处理无效路径
+	if path == "" || path == "undefined" || path == "null" {
 		path = "/"
 	}
 
-	tree, err := svc.BuildTree(path, 0)
+	tree, err := getService().BuildTree(path, 0)
 	if err != nil {
-		c.String(consts.StatusInternalServerError, err.Error())
+		logger.Error("Failed to build tree for path '%s': %v", path, err)
+		// 返回简单的树结构
+		c.JSON(consts.StatusOK, map[string]interface{}{
+			"tree": map[string]interface{}{
+				"name": "/",
+				"path": "/",
+			},
+		})
 		return
 	}
 
-	// 转换为 map 格式
-	treeMap := treeToMap(tree)
+	// 转换为完整的树结构（包含 children）
+	treeMap := treeToCompleteMap(tree)
 
-	resp := &index.GetDirectoryTreeResponse{
-		Tree: treeMap,
-	}
-	c.JSON(consts.StatusOK, resp)
+	// 直接返回完整的 JSON，不使用 thrift 生成的结构体
+	c.JSON(consts.StatusOK, map[string]interface{}{
+		"tree": treeMap,
+	})
 }
 
 // HandleQRCode .
@@ -182,14 +281,26 @@ func HandleQRCode(ctx context.Context, c *app.RequestContext) {
 	c.Response.BodyWriter().Write(png)
 }
 
-// treeToMap 将 TreeNode 转换为 map[string]string
-func treeToMap(node *model.TreeNode) map[string]string {
+// treeToCompleteMap 将 TreeNode 转换为完整的树结构 map（包含 children）
+func treeToCompleteMap(node *model.TreeNode) map[string]interface{} {
 	if node == nil {
-		return map[string]string{}
+		return map[string]interface{}{
+			"name": "/",
+			"path": "/",
+		}
 	}
-	return map[string]string{
+	result := map[string]interface{}{
 		"name":  node.Name,
 		"path":  node.Path,
-		"isDir": "true",
+		"isDir": node.IsDir,
 	}
+	// 转换 children
+	if len(node.Children) > 0 {
+		children := make([]map[string]interface{}, 0, len(node.Children))
+		for _, child := range node.Children {
+			children = append(children, treeToCompleteMap(child))
+		}
+		result["children"] = children
+	}
+	return result
 }
