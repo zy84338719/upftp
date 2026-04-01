@@ -36,4 +36,9 @@ _testmain.go
 upftp.yaml
 dumped_hertz_remote_config.json
 upftp
+
+# Frontend build output (embedded into Go binary)
+/biz/handler/index/templates/*
+!/biz/handler/index/templates/.gitkeep
+/web/dist/
 		  

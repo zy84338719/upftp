@@ -11,7 +11,8 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: 'dist',
+    outDir: '../biz/handler/index/templates',
+    emptyOutDir: true,
     assetsDir: 'assets',
     // Generate static files for embedding
     rollupOptions: {
