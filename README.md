@@ -130,7 +130,7 @@
 
 ```bash
 # 添加 tap
-brew tap zy84338719/tap
+brew tap zy84338719/homebrew-tap
 
 # 安装
 brew install upftp
