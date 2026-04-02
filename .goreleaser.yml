@@ -3,7 +3,7 @@ version: 2
 project_name: upftp
 builds:
   - id: upftp
-    main: ./cmd/server/main.go
+    main: .
     env:
       - CGO_ENABLED=0
     goos:
