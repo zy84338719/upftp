@@ -39,3 +39,6 @@ upftp
 
 # Frontend build output (ignored in web/dist, but committed in embedded templates)
 /web/dist/
+
+# GoReleaser build output
+/dist/
