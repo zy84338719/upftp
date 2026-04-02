@@ -8,13 +8,15 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 	account "github.com/zy84338719/upftp/biz/model/account"
+	"github.com/zy84338719/upftp/biz/handler/index"
+	"github.com/zy84338719/upftp/pkg/conf"
 )
 
 // HandleLoginPage .
 // @router /login [GET]
 func HandleLoginPage(ctx context.Context, c *app.RequestContext) {
-	resp := new(account.VoidResponse)
-	c.JSON(consts.StatusOK, resp)
+	// 返回主页面，让前端 Vue Router 处理 /login 路由
+	index.HandleIndexPage(ctx, c)
 }
 
 // HandleLogin .
@@ -24,13 +26,28 @@ func HandleLogin(ctx context.Context, c *app.RequestContext) {
 	var req account.LoginRequest
 	err = c.BindAndValidate(&req)
 	if err != nil {
-		c.String(consts.StatusBadRequest, err.Error())
+		c.JSON(consts.StatusBadRequest, &account.LoginResponse{
+			Success: false,
+			Error:   "Invalid request",
+		})
 		return
 	}
 
-	resp := new(account.LoginResponse)
-
-	c.JSON(consts.StatusOK, resp)
+	// Verify username and password
+	if req.Username == conf.AppConfig.HTTPAuth.Username && req.Password == conf.AppConfig.HTTPAuth.Password {
+		// Generate a simple token (you might want to use JWT in production)
+		token := "token_" + req.Username
+		
+		c.JSON(consts.StatusOK, &account.LoginResponse{
+			Success: true,
+			Token:   token,
+		})
+	} else {
+		c.JSON(consts.StatusUnauthorized, &account.LoginResponse{
+			Success: false,
+			Error:   "Invalid username or password",
+		})
+	}
 }
 
 // HandleLogout .
