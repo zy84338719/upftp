@@ -3,7 +3,7 @@ package index
 import (
 	"embed"
 	"io/fs"
-	"path/filepath"
+	"path"
 )
 
 //go:embed templates/*
@@ -19,6 +19,7 @@ func GetTemplatesFS() fs.FS {
 }
 
 // ReadTemplateFile 读取嵌入的模板文件
-func ReadTemplateFile(path string) ([]byte, error) {
-	return embeddedFS.ReadFile(filepath.Join("templates", path))
+// 使用 path.Join 而非 filepath.Join，因为 embed.FS 始终使用正斜杠作为路径分隔符
+func ReadTemplateFile(name string) ([]byte, error) {
+	return embeddedFS.ReadFile(path.Join("templates", name))
 }

@@ -26,7 +26,7 @@ deps:
 	$(GOMOD) download
 	$(GOMOD) tidy
 
-MAIN_PATH = ./cmd/server
+MAIN_PATH = .
 
 build:
 	$(GOBUILD) $(BUILD_FLAGS) -o $(BINARY_NAME) $(MAIN_PATH)
