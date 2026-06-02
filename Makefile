@@ -19,6 +19,7 @@ BUILD_FLAGS = -a -ldflags "$(LDFLAGS)"
 .PHONY: all build build-all clean test deps fmt lint help
 .PHONY: run run-ftp install uninstall
 .PHONY: release release-snapshot release-local validate
+.PHONY: package package-deb package-rpm
 
 all: clean deps build
 
@@ -121,6 +122,15 @@ debug-info:
 	@echo "Build Date:  $(BUILD_DATE)"
 	@echo "Binary:      $(BINARY_NAME)"
 
+package:
+	@./scripts/package.sh --version $(VERSION) --config upftp.example.yaml --service packaging/systemd/upftp.service --format all --arch amd64,arm64
+
+package-deb:
+	@./scripts/package.sh --version $(VERSION) --config upftp.example.yaml --service packaging/systemd/upftp.service --format deb --arch amd64,arm64
+
+package-rpm:
+	@./scripts/package.sh --version $(VERSION) --config upftp.example.yaml --service packaging/systemd/upftp.service --format rpm --arch amd64,arm64
+
 help:
 	@echo "UPFTP Build System"
 	@echo ""
@@ -158,3 +168,8 @@ help:
 	@echo "  deps           Download dependencies"
 	@echo "  debug-info     Show build information"
 	@echo "  help           Show this help"
+	@echo ""
+	@echo "Packaging:"
+	@echo "  package        Build .deb and .rpm for amd64+arm64"
+	@echo "  package-deb    Build .deb only"
+	@echo "  package-rpm    Build .rpm only"
