@@ -1,0 +1,37 @@
+# 持续集成:每次 push / PR 运行测试与多平台构建,确保代码始终可发布。
+name: ci
+
+on:
+  push:
+    branches: [main, rewrite/v2]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test ./...
+
+  build-all:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build all platforms
+        run: make build-all
+      - name: Smoke test(版本输出)
+        run: ./dist/upftp_linux_amd64 -version

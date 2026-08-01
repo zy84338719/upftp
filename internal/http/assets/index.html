@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>upftp · 文件分享</title>
+<style>
+  :root { --bg:#0f1115; --card:#171a21; --fg:#e6e6e6; --muted:#8a8f98; --accent:#5b9dff; --border:#262a33; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--fg); }
+  header { padding:18px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  header h1 { font-size:18px; font-weight:600; margin:0; }
+  header .meta { color:var(--muted); font-size:13px; }
+  main { max-width:920px; margin:0 auto; padding:24px 16px 60px; }
+  .toolbar { display:flex; gap:8px; margin-bottom:16px; align-items:center; flex-wrap:wrap; }
+  .crumbs { color:var(--muted); font-size:14px; flex:1; min-width:200px; word-break:break-all; }
+  .crumbs a { color:var(--accent); text-decoration:none; }
+  .btn { background:var(--card); border:1px solid var(--border); color:var(--fg); padding:7px 14px; border-radius:6px; cursor:pointer; font-size:13px; }
+  .btn:hover { border-color:var(--accent); }
+  .btn-primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  th, td { padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); font-size:14px; }
+  th { color:var(--muted); font-weight:500; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover { background:#1d212a; }
+  td.name a { color:var(--fg); text-decoration:none; }
+  td.name a:hover { color:var(--accent); }
+  .icon { display:inline-block; width:18px; text-align:center; margin-right:6px; }
+  .empty { text-align:center; padding:48px; color:var(--muted); }
+  #drop { border:2px dashed var(--border); border-radius:8px; padding:28px; text-align:center; color:var(--muted); margin-bottom:16px; transition:border-color .2s; }
+  #drop.over { border-color:var(--accent); color:var(--accent); }
+  #fileInput { display:none; }
+  .progress { height:4px; background:var(--border); border-radius:2px; overflow:hidden; margin-top:8px; display:none; }
+  .progress > div { height:100%; background:var(--accent); width:0; transition:width .2s; }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📁 upftp</h1>
+  <div class="meta" id="meta"></div>
+</header>
+<main>
+  <div id="drop">⬆️ 拖拽文件到此处上传,或点击选择
+    <input type="file" id="fileInput" multiple>
+    <div class="progress" id="prog"><div></div></div>
+  </div>
+  <div class="toolbar">
+    <div class="crumbs" id="crumbs"></div>
+    <button class="btn" onclick="mkdirPrompt()">＋ 新建文件夹</button>
+  </div>
+  <table>
+    <thead><tr><th>名称</th><th>大小</th><th>修改时间</th><th></th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty" id="empty" style="display:none">此目录为空</div>
+</main>
+<footer>upftp · 快速文件分享</footer>
+<script>
+let cwd = '/';
+function join(p) { return (cwd === '/' ? '' : cwd) + '/' + p; }
+async function load() {
+  const r = await fetch('/api/files?path=' + encodeURIComponent(cwd));
+  const data = await r.json();
+  document.getElementById('meta').textContent = data.host ? 'ftp://' + data.host + ':' + data.ftp_port : '';
+  renderCrumbs();
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = '';
+  const items = data.files || [];
+  document.getElementById('empty').style.display = items.length ? 'none' : 'block';
+  for (const f of items) {
+    const tr = document.createElement('tr');
+    const full = join(f.name);
+    let link, icon;
+    if (f.is_dir) { link = `onclick="cd('${full}')"`; icon='📁'; }
+    else { link = `href="/api/download?path=${encodeURIComponent(full)}" download`; icon='📄'; }
+    const size = f.is_dir ? '—' : humanSize(f.size);
+    const dl = f.is_dir ? '' : `<a class="btn" href="/api/download?path=${encodeURIComponent(full)}" download>下载</a>`;
+    tr.innerHTML = `<td class="name"><span class="icon">${icon}</span><a ${link}>${esc(f.name)}</a></td><td>${size}</td><td>${f.mod_time||''}</td><td>${dl}</td>`;
+    tb.appendChild(tr);
+  }
+}
+function cd(p) { cwd = p; load(); }
+function renderCrumbs() {
+  const parts = cwd.split('/').filter(Boolean);
+  let html = '<a onclick="cd(\'/\')">根目录</a>';
+  let acc = '';
+  for (const p of parts) { acc += '/' + p; html += ` / <a onclick="cd('${acc}')">${esc(p)}</a>`; }
+  document.getElementById('crumbs').innerHTML = html;
+}
+function humanSize(b) {
+  if (b < 1024) return b+'B';
+  const u=['KB','MB','GB','TB']; let i=-1; do{b/=1024;i++;}while(b>=1024&&i<3); return b.toFixed(1)+u[i];
+}
+function esc(s){return s.replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function mkdirPrompt() {
+  const n = prompt('文件夹名称');
+  if (!n) return;
+  fetch('/api/mkdir?path='+encodeURIComponent(join(n)),{method:'POST'}).then(load);
+}
+// 上传:点击与拖拽
+const drop = document.getElementById('drop'), fileInput = document.getElementById('fileInput');
+drop.onclick = () => fileInput.click();
+fileInput.onchange = () => upload(fileInput.files);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); upload(e.dataTransfer.files); };
+function upload(files) {
+  const prog = document.getElementById('prog'); prog.style.display='block';
+  let done = 0;
+  for (const f of files) {
+    const fd = new FormData(); fd.append('file', f);
+    fd.append('path', join(f.name));
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = e => { if(e.lengthComputable) prog.firstChild.style.width=(done+e.loaded)/ (files.length*e.total)*100+'%'; };
+    xhr.onload = () => { done++; if (done===files.length){ prog.style.display='none'; prog.firstChild.style.width=0; load(); } };
+    xhr.open('POST','/api/upload'); xhr.send(fd);
+  }
+}
+load();
+</script>
+</body>
+</html>
