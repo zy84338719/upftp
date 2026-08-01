@@ -1,59 +1,27 @@
-*.o
-*.a
-*.so
-_obj
-_test
-*.[568vq]
-[568vq].out
-*.cgo1.go
-*.cgo2.c
-_cgo_defun.c
-_cgo_gotypes.go
-_cgo_export.*
-_testmain.go
+# 构建产物
+/bin/
+/dist/
 *.exe
 *.exe~
-*.test
-*.prof
-*.rar
-*.zip
-*.gz
-*.psd
-*.bmd
-*.cfg
-*.pptx
-*.log
-*nohup.out
-*settings.pyc
-*.sublime-project
-*.sublime-workspace
-!.gitkeep
-.DS_Store
-/.idea
-/.vscode
-/output
-*.local.yml
-upftp.yaml
-dumped_hertz_remote_config.json
 upftp
+upftp_*
 
-# Frontend build output (ignored in web/dist, but committed in embedded templates)
-/web/dist/
-
-# GoReleaser build output
-/dist/
-
-# Compiled binaries (build artifacts, never commit)
-/server
-/upftp-server
-upftp
-
-# Test coverage output (generated)
+# 测试覆盖率
 coverage.out
-*.out
+coverage.html
+*.prof
 
-# Packaging artifacts (built by GoReleaser / gh-pages, never commit)
-/apt/
-*.deb
-*.rpm
-*.snap
+# 本地配置(不提交个人凭据)
+upftp.yaml
+upftp.yml
+*.local.yaml
+
+# 编辑器/系统
+.DS_Store
+.idea/
+.vscode/
+.zcode/
+*.swp
+
+# 临时备份
+.git.backup/
