@@ -42,3 +42,18 @@ upftp
 
 # GoReleaser build output
 /dist/
+
+# Compiled binaries (build artifacts, never commit)
+/server
+/upftp-server
+upftp
+
+# Test coverage output (generated)
+coverage.out
+*.out
+
+# Packaging artifacts (built by GoReleaser / gh-pages, never commit)
+/apt/
+*.deb
+*.rpm
+*.snap
