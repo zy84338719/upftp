@@ -1,5 +1,9 @@
 # Goreleaser 配置:push tag 时由 GitHub Actions 触发,
 # 自动构建 6 平台二进制并发布到 GitHub Releases。
+#
+# 注:Homebrew tap / Scoop bucket 的自动推送暂未启用,
+#     待 tap/bucket 仓库的 secret 配置完整后(参见 packaging/)再启用 brews/scoops。
+#     当前发布只产出二进制归档 + checksums,足以支持 install.sh 安装。
 # 文档:https://goreleaser.com
 
 version: 2
@@ -26,11 +30,9 @@ builds:
     goarch:
       - amd64
       - arm64
-    ignore: []  # 6 个组合全部构建
 
 archives:
   - id: default
-    # tar.gz 用于 linux/darwin,zip 用于 windows
     formats:
       - tar.gz
     format_overrides:
@@ -73,34 +75,15 @@ release:
     ## upftp {{ .Tag }}
     快速、即开即用的 FTP 文件分享工具。单二进制,跨平台。
 
-    ### 安装
+    ### 一行安装
+    **Linux / macOS:**
     ```bash
     curl -fsSL https://github.com/zy84338719/upftp/raw/main/scripts/install.sh | bash
     ```
+    **Windows(PowerShell):**
+    ```powershell
+    irm https://github.com/zy84338719/upftp/raw/main/scripts/install.ps1 | iex
+    ```
 
-# Homebrew tap:推送到独立的 tap 仓库
-brews:
-  - name: upftp
-    repository:
-      owner: zy84338719
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    homepage: https://github.com/zy84338719/upftp
-    description: "快速、即开即用的 FTP 文件分享工具"
-    license: MIT
-    install: |
-      bin.install "upftp"
-    test: |
-      system "#{bin}/upftp", "-version"
-
-# Scoop manifest:推送到独立的 bucket 仓库
-scoops:
-  - name: upftp
-    repository:
-      owner: zy84338719
-      name: scoop-bucket
-      token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"
-    homepage: https://github.com/zy84338719/upftp
-    description: "快速、即开即用的 FTP 文件分享工具"
-    license: MIT
-    url_template: "https://github.com/zy84338719/upftp/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    ### 手动下载
+    下方选择对应平台的归档,解压后将 `upftp`(Windows 为 `upftp.exe`)放入 PATH。

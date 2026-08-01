@@ -34,9 +34,6 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Homebrew tap / Scoop bucket 推送用 token(若未配置则跳过对应步骤)
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
-          SCOOP_BUCKET_GITHUB_TOKEN: ${{ secrets.SCOOP_BUCKET_GITHUB_TOKEN }}
 
   # 发布安装脚本到 GitHub Pages(让 install URL 稳定短链)
   # 也可直接用 raw.githubusercontent.com,这里保持简单不强制启用 Pages。
