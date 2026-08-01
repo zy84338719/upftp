@@ -57,3 +57,9 @@ coverage.out
 *.deb
 *.rpm
 *.snap
+
+# Editor/AI assistant 工作目录,不提交
+.trae/
+.zcode/
+.idea/
+.vscode/
