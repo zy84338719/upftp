@@ -1,28 +1,96 @@
-# upftp
+<div align="center">
 
-> 一个快速、即开即用的 FTP 文件分享工具。单二进制,跨平台(Linux / macOS / Windows),
-> 同时提供 **FTP 服务器**、**REST API** 和**极简 Web 界面**。
+# ▸ upftp
 
-## 特性
+**快速、即开即用的 FTP 文件分享工具**
+
+单二进制 · 跨平台 · FTP + REST API + Web 界面 · 默认匿名
+
+[安装](#安装) · [使用](#快速开始) · [API](#rest-api) · [截图](#截图)
+
+</div>
+
+---
+
+一个命令就能把任意目录变成可下载的 FTP/HTTP 文件服务。无需配置、无需 Go 环境,**默认匿名访问**,即开即用。
 
 - 🚀 **一行启动** — `upftp` 即可分享当前目录,自动打印访问地址
-- 📡 **完整 FTP 协议** — 支持被动/主动模式(PASV/EPSV/PORT/EPRT)、上传下载、断点续传、MLSD
-- 🌐 **REST API** — 程序可调用,支持动态创建/停止 FTP 会话、文件上传下载
+- 📡 **完整 FTP 协议** — 被动/主动模式、上传下载、断点续传、MLSD
+- 🌐 **REST API** — 程序可调用,支持动态创建/停止 FTP 会话
 - 🖥️ **极简 Web 界面** — 浏览器访问,文件列表、拖拽上传、一键下载
 - 📱 **TUI + 二维码** — 终端选中文件即显示二维码,手机扫码下载
-- 🔒 **沙箱隔离** — 所有路径强制限制在共享根目录内,防目录穿越
-- 🔓 **默认匿名** — 即开即用;`-user/-pass` 启用密码认证
-- 📦 **零运行时依赖** — 单二进制,核心代码 ~2500 行
+- 🔒 **沙箱隔离** — 所有路径强制限制在共享根目录内
+- 📦 **零运行时依赖** — 单二进制 ~11 MB,核心代码 2200 行
+
+## 截图
+
+<table>
+  <tr>
+    <td width="50%" align="center"><b>启动输出</b></td>
+    <td width="50%" align="center"><b>TUI 文件浏览</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/startup.png" alt="upftp 启动输出"></td>
+    <td><img src="docs/screenshots/tui.png" alt="TUI 文件浏览界面"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>扫码下载(二维码)</b></td>
+    <td align="center"><b>Web 界面</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/qrcode.png" alt="二维码扫码下载"></td>
+    <td><img src="docs/screenshots/web.png" alt="Web 文件管理界面"></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><b>命令行 / API 操作</b></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/cli.png" alt="curl 与 API 命令行操作"></td>
+  </tr>
+</table>
 
 ## 安装
 
-```bash
-# 从源码
-go install github.com/zy84338719/upftp@latest
+### 一行命令安装(推荐,无需 Go 环境)
 
-# 或克隆后构建
+**Linux / macOS:**
+```bash
+curl -fsSL https://github.com/zy84338719/upftp/raw/main/scripts/install.sh | bash
+```
+
+**Windows(PowerShell):**
+```powershell
+irm https://github.com/zy84338719/upftp/raw/main/scripts/install.ps1 | iex
+```
+
+脚本会自动检测系统与架构,从 [Releases](https://github.com/zy84338719/upftp/releases) 下载对应二进制、校验 SHA256 并安装到 PATH。默认装到 `~/.local/bin`(Linux/macOS)或 `%USERPROFILE%\.upftp\bin`(Windows),可用 `UPFTP_INSTALL_DIR` 自定义。
+
+### 包管理器
+
+**Homebrew(macOS / Linux):**
+```bash
+brew tap zy84338719/tap
+brew install upftp
+```
+
+**Scoop(Windows):**
+```powershell
+scoop bucket add zy84338719 https://github.com/zy84338719/scoop-bucket
+scoop install upftp
+```
+
+### 指定版本
+
+```bash
+curl -fsSL https://github.com/zy84338719/upftp/raw/main/scripts/install.sh | bash -s v1.0.0
+```
+
+### 从源码构建(需要 Go 1.22+)
+
+```bash
 git clone https://github.com/zy84338719/upftp.git
-cd upftp && make build
+cd upftp && make build        # 当前平台
+make build-all                # 全平台交叉编译
 ```
 
 ## 快速开始
@@ -30,11 +98,13 @@ cd upftp && make build
 ```bash
 # 分享当前目录(匿名、默认端口 2121 / 8080)
 upftp
-#   📁 upftp 已启动
-#   📡 FTP:   ftp://192.168.1.5:2121
-#   🌐 Web:   http://192.168.1.5:8080
-#   🔓 匿名访问
+```
 
+<p align="center">
+  <img src="docs/screenshots/startup.png" alt="upftp 启动" width="720">
+</p>
+
+```bash
 # 指定目录、端口、密码
 upftp -d ~/share -p 2121 -user me -pass secret
 
@@ -70,12 +140,10 @@ upftp -d ~/share --tui=false
 curl ftp://192.168.1.5:2121/hello.txt -o hello.txt
 
 # 浏览器:访问 http://192.168.1.5:8080,拖拽上传/点击下载
-
 # TUI:终端里选中文件显示二维码,手机扫码下载
-upftp --tui
 ```
 
-### 2. API — 直接文件操作
+### 2. REST API — 直接文件操作
 
 ```bash
 # 列出文件
@@ -95,7 +163,7 @@ curl -X POST "http://localhost:8080/api/mkdir?path=/newdir"
 curl -X DELETE "http://localhost:8080/api/files?path=/old.txt"
 ```
 
-### 3. API — 动态管理 FTP 会话
+### 3. REST API — 动态管理 FTP 会话
 
 ```bash
 # 创建一个新的 FTP 会话(可指定不同目录/端口)
@@ -109,6 +177,10 @@ curl http://localhost:8080/api/sessions
 # 停止某个会话
 curl -X DELETE http://localhost:8080/api/sessions/s2
 ```
+
+<p align="center">
+  <img src="docs/screenshots/cli.png" alt="API 命令行操作" width="720">
+</p>
 
 ## 认证
 
@@ -125,7 +197,7 @@ upftp 单二进制
 └── 共享核心       internal/core/     会话管理 / 文件操作 / 认证(FTP 与 HTTP 共用)
 ```
 
-直接依赖仅 3 个:`yaml.v3`(配置)、`bubbletea`(TUI)、`go-qrcode`(二维码)。
+直接依赖仅 5 个:`yaml.v3`(配置)、`bubbletea` + `bubbles` + `lipgloss`(TUI)、`go-qrcode`(二维码)。
 
 ## 开发
 
@@ -134,6 +206,10 @@ make test          # 运行测试
 make vet           # 静态检查
 make build-all     # 交叉编译全部平台
 ```
+
+## 发布
+
+推送形如 `v1.0.0` 的 tag 即触发 [GitHub Actions](.github/workflows/release.yml),由 [Goreleaser](.goreleaser.yml) 自动构建 6 平台二进制并发布到 Releases,同时更新 Homebrew tap 与 Scoop bucket。
 
 ## 许可证
 
