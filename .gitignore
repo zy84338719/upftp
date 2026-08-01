@@ -63,3 +63,6 @@ coverage.out
 .zcode/
 .idea/
 .vscode/
+
+# 临时备份(git 历史清理时产生)
+.git.backup/
