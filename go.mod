@@ -1,9 +1,9 @@
 module github.com/zy84338719/upftp
 
-go 1.24.2
+go 1.25
 
 require (
-	github.com/apache/thrift v0.13.0
+	github.com/apache/thrift v0.23.0
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.2.4
 	github.com/charmbracelet/lipgloss v1.0.0
