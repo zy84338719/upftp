@@ -1,0 +1,106 @@
+# Goreleaser 配置:push tag 时由 GitHub Actions 触发,
+# 自动构建 6 平台二进制并发布到 GitHub Releases。
+# 文档:https://goreleaser.com
+
+version: 2
+
+project_name: upftp
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: upftp
+    main: ./
+    binary: upftp
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      # 把版本/提交/构建时间注入 main.version 等变量
+      - -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore: []  # 6 个组合全部构建
+
+archives:
+  - id: default
+    # tar.gz 用于 linux/darwin,zip 用于 windows
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{ .Version }}_
+      {{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE.txt
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^test:"
+      - "Merge pull request"
+      - "Merge branch"
+
+release:
+  github:
+    owner: zy84338719
+    name: upftp
+  draft: false
+  prerelease: auto
+  name_template: "{{ .Tag }} · {{ .ProjectName }}"
+  header: |
+    ## upftp {{ .Tag }}
+    快速、即开即用的 FTP 文件分享工具。单二进制,跨平台。
+
+    ### 安装
+    ```bash
+    curl -fsSL https://github.com/zy84338719/upftp/raw/main/scripts/install.sh | bash
+    ```
+
+# Homebrew tap:推送到独立的 tap 仓库
+brews:
+  - name: upftp
+    repository:
+      owner: zy84338719
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: https://github.com/zy84338719/upftp
+    description: "快速、即开即用的 FTP 文件分享工具"
+    license: MIT
+    install: |
+      bin.install "upftp"
+    test: |
+      system "#{bin}/upftp", "-version"
+
+# Scoop manifest:推送到独立的 bucket 仓库
+scoops:
+  - name: upftp
+    repository:
+      owner: zy84338719
+      name: scoop-bucket
+      token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"
+    homepage: https://github.com/zy84338719/upftp
+    description: "快速、即开即用的 FTP 文件分享工具"
+    license: MIT
+    url_template: "https://github.com/zy84338719/upftp/releases/download/{{ .Tag }}/{{ .ArtifactName }}"

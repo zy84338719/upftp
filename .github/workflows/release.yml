@@ -1,0 +1,42 @@
+# 自动发布:推送形如 v*.*.* 的 tag 时,Goreleaser 构建全平台二进制并发布到 Releases。
+# 同时推送到 Homebrew tap 与 Scoop bucket。
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write   # 创建 Release
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # goreleaser 需要完整历史生成 changelog
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Homebrew tap / Scoop bucket 推送用 token(若未配置则跳过对应步骤)
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+          SCOOP_BUCKET_GITHUB_TOKEN: ${{ secrets.SCOOP_BUCKET_GITHUB_TOKEN }}
+
+  # 发布安装脚本到 GitHub Pages(让 install URL 稳定短链)
+  # 也可直接用 raw.githubusercontent.com,这里保持简单不强制启用 Pages。
