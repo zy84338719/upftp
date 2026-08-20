@@ -1,4 +1,5 @@
-.PHONY: build build-all test vet fmt clean run help
+.PHONY: all build build-all clean test vet fmt run install help
+.PHONY: package package-deb package-rpm
 
 BINARY  := upftp
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
@@ -44,5 +45,18 @@ run:
 install: build
 	$(GO) install -ldflags "$(LDFLAGS)" .
 
+## package: Build .deb and .rpm for amd64+arm64
+package:
+	@./scripts/package.sh --version $(VERSION) --config upftp.example.yaml --service packaging/systemd/upftp.service --format all --arch amd64,arm64
+
+## package-deb: Build .deb only
+package-deb:
+	@./scripts/package.sh --version $(VERSION) --config upftp.example.yaml --service packaging/systemd/upftp.service --format deb --arch amd64,arm64
+
+## package-rpm: Build .rpm only
+package-rpm:
+	@./scripts/package.sh --version $(VERSION) --config upftp.example.yaml --service packaging/systemd/upftp.service --format rpm --arch amd64,arm64
+
+## help: Show this help
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## //' | column -t -s ':'
