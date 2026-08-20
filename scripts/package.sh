@@ -383,8 +383,8 @@ Description: ${PKG_DESCRIPTION}
 EOF
 
     # ---- Maintainer scripts ----
-    # conffiles
-    if [[ -n "${CONFIG_FILE}" ]]; then
+    # conffiles (only when config file is actually included in the package)
+    if [[ -n "${CONFIG_FILE}" && -f "${CONFIG_FILE}" ]]; then
         echo "${PKG_ETCDIR}/$(basename "${CONFIG_FILE}")" > "${staging_dir}/DEBIAN/conffiles"
     fi
 
@@ -494,11 +494,13 @@ POSTRM_EOF
     # debian-binary
     echo "2.0" > "${work_dir}/debian-binary"
 
-    # control.tar.gz
-    tar -czf "${work_dir}/control.tar.gz" -C "${staging_dir}/DEBIAN" .
+    # control.tar.gz — force uid/gid 0 so installed files are root-owned
+    tar -czf "${work_dir}/control.tar.gz" -C "${staging_dir}/DEBIAN" \
+        --owner=0 --group=0 .
 
-    # data.tar.gz
+    # data.tar.gz — force uid/gid 0 so installed files are root-owned
     tar -czf "${work_dir}/data.tar.gz" -C "${staging_dir}" \
+        --owner=0 --group=0 \
         --exclude="./DEBIAN" \
         .
 
@@ -551,7 +553,23 @@ with open(deb_path, 'wb') as f:
 # ======================= Build RPM Package =======================
 build_rpm() {
     local goarch="$1"
-    local rpm_arch="${goarch}"
+
+    # Map Go arch to RPM arch
+    local rpm_arch
+    case "${goarch}" in
+        amd64)  rpm_arch="x86_64"  ;;
+        arm64)  rpm_arch="aarch64" ;;
+        386)    rpm_arch="i686"    ;;
+        arm)    rpm_arch="armhfp"  ;;
+        *)      rpm_arch="${goarch}" ;;
+    esac
+
+    # RPM Version must not contain '-'; normalize git describe output
+    local rpm_version
+    rpm_version="${PKG_VERSION//-/_}"
+    if [[ "${rpm_version}" != "${PKG_VERSION}" ]]; then
+        warn "Version '${PKG_VERSION}' contains '-'; normalizing to '${rpm_version}' for RPM."
+    fi
 
     info "Building .rpm package for ${rpm_arch}..."
 
@@ -589,7 +607,7 @@ build_rpm() {
     fi
 
     # Create tarball for rpmbuild
-    local tar_name="${PKG_NAME}-${PKG_VERSION}"
+    local tar_name="${PKG_NAME}-${rpm_version}"
     tar -czf "${rpmbuild_dir}/SOURCES/${tar_name}.tar.gz" -C "${staging_dir}" .
 
     # ---- .spec file ----
@@ -615,7 +633,7 @@ build_rpm() {
 
     cat > "${rpmbuild_dir}/SPECS/${PKG_NAME}.spec" <<EOF
 Name:           ${PKG_NAME}
-Version:        ${PKG_VERSION}
+Version:        ${rpm_version}
 Release:        1%{?dist}
 Summary:        ${PKG_DESCRIPTION}
 
@@ -630,9 +648,6 @@ Recommends:     systemd
 
 %description
 ${PKG_DESCRIPTION}
-
-A modern cross-platform multi-protocol file sharing server with HTTP, FTP,
-WebDAV, NFS and MCP protocol support.
 
 %prep
 %setup -q -c
@@ -680,13 +695,14 @@ ${PKG_BINDIR}/${PKG_NAME}
 %if %{?_systemd_unitdir:1}0
 ${PKG_SYSCONFDIR}/${PKG_NAME}.service
 %endif
+$(if [[ -n "${CONFIG_FILE}" && -f "${CONFIG_FILE}" ]]; then echo "${PKG_ETCDIR}/$(basename "${CONFIG_FILE}")"; fi)
 
 %changelog
-* $(date +'%a %b %d %Y') ${PKG_MAINTAINER} - ${PKG_VERSION}-1
+* $(date +'%a %b %d %Y') ${PKG_MAINTAINER} - ${rpm_version}-1
 - Initial package
 EOF
 
-    # Try to build with rpmbuild if available
+    # Build with rpmbuild
     if command -v rpmbuild &>/dev/null; then
         info "Building RPM with rpmbuild..."
         rpmbuild -bb \
@@ -702,23 +718,8 @@ EOF
             success "Created $(basename "${built_rpm}")"
         fi
     else
-        # Without rpmbuild, create a cpio-based RPM manually
-        warn "rpmbuild not found, creating RPM-compatible cpio package..."
-        local rpm_name="${PKG_NAME}-${PKG_VERSION}-1.${rpm_arch}.rpm"
-        local rpm_path="${OUTPUT_DIR}/${rpm_name}"
-
-        info "Creating pseudo-RPM archive (cpio + gzip)..."
-        local abs_rpm_path
-        abs_rpm_path=$(cd "$(dirname "${rpm_path}")" && pwd)/$(basename "${rpm_path}")
-        (cd "${staging_dir}" && find . | cpio -o -H newc 2>/dev/null | gzip > "${abs_rpm_path}")
-
-        if [[ -f "${rpm_path}" ]]; then
-            local size
-            size=$(du -h "${rpm_path}" | awk '{print $1}')
-            warn "Note: This is a cpio archive renamed as .rpm (not a real RPM)."
-            warn "For a proper RPM, install rpmbuild: yum install rpm-build / apt install rpm"
-            success "Created ${rpm_path} (${size})"
-        fi
+        error "rpmbuild is not available. Install it with: yum install rpm-build  OR  apt install rpm"
+        return 1
     fi
 }
 

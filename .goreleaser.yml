@@ -1,11 +1,28 @@
+# Goreleaser 配置:push tag 时由 GitHub Actions 触发,
+# 自动构建 6 平台二进制并发布到 GitHub Releases。
+#
+# 注:Homebrew tap / Scoop bucket 的自动推送暂未启用,
+#     待 tap/bucket 仓库的 secret 配置完整后(参见 packaging/)再启用 brews/scoops。
+#     当前发布只产出二进制归档 + checksums,足以支持 install.sh 安装。
+# 文档:https://goreleaser.com
+
 version: 2
 
 project_name: upftp
+
+before:
+  hooks:
+    - go mod tidy
+
 builds:
   - id: upftp
-    main: .
+    main: ./
+    binary: upftp
     env:
       - CGO_ENABLED=0
+    ldflags:
+      # 把版本/提交/构建时间注入 main.version 等变量
+      - -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.Date}}
     goos:
       - linux
       - darwin
@@ -13,210 +30,57 @@ builds:
     goarch:
       - amd64
       - arm64
-      - 386
-    ignore:
-      - goos: darwin
-        goarch: 386
-      - goos: windows
-        goarch: arm64
-    ldflags:
-      - -s -w
-      - -X main.Version={{.Version}}
-      - -X main.LastCommit={{.ShortCommit}}
-      - -X main.BuildDate={{.Date}}
-    binary: upftp
-    mod_timestamp: '{{ .CommitTimestamp }}'
 
 archives:
-  - id: upftp-archive
-    builds:
-      - upftp
-    format: tar.gz
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
+  - id: default
+    formats:
+      - tar.gz
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
-      - README.md
       - LICENSE.txt
-      - upftp.example.yaml
-    wrap_in_directory: true
-
-nfpms:
-  - id: upftp
-    builds:
-      - upftp
-    package_name: upftp
-    vendor: Zhang Yi
-    homepage: https://github.com/zy84338719/upftp
-    maintainer: Zhang Yi <zy84338719@gmail.com>
-    description: Modern cross-platform file sharing server with HTTP and FTP support
-    license: MIT
-    formats:
-      - deb
-      - rpm
-      - archlinux
-    bindir: /usr/bin
-    section: net
-    priority: optional
-    file_name_template: "{{ .ConventionalFileName }}"
-    contents:
-      - src: packaging/systemd/upftp.service
-        dst: /etc/systemd/system/upftp.service
-      - src: packaging/config/upftp.conf
-        dst: /etc/upftp/upftp.conf
-        type: config|noreplace
-      - src: upftp.example.yaml
-        dst: /etc/upftp/upftp.example.yaml
-    scripts:
-      postinstall: packaging/debian/postinst
-      preremove: packaging/debian/prerm
-      postremove: packaging/debian/postrm
-    recommends:
-      - systemd
-    deb:
-      lintian_overrides:
-        - statically-linked-binary
-        - changelog-file-missing-in-native-package
-    rpm: {}
-
-brews:
-  - name: upftp
-    repository:
-      owner: zy84338719
-      name: homebrew-tap
-      branch: main
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    directory: Formula
-    homepage: https://github.com/zy84338719/upftp
-    description: Modern cross-platform file sharing server with HTTP and FTP support
-    license: MIT
-    skip_upload: false
-    install: |-
-      bin.install "upftp"
-      
-      # Create configuration directory
-      (buildpath/"upftp.example.yaml").write_file
-      etc.install "upftp.example.yaml" => "upftp/upftp.example.yaml"
-    service: |-
-      run [opt_bin/"upftp", "-auto", "-d", var/"upftp"]
-      keep_alive true
-      log_path var/"log/upftp.log"
-      error_log_path var/"log/upftp.error.log"
-      working_dir var/"upftp"
-    test: |-
-      system "#{bin}/upftp", "-h"
-
-# Scoop disabled - requires SCOOP_GITHUB_TOKEN secret
-# Uncomment to enable Scoop for Windows users
-# scoops:
-#   - repository:
-#       owner: zy84338719
-#       name: scoop-bucket
-#       branch: main
-#       token: "{{ .Env.SCOOP_GITHUB_TOKEN }}"
-#   directory: bucket
-#   homepage: https://github.com/zy84338719/upftp
-#   description: Modern cross-platform file sharing server with HTTP and FTP support
-#   license: MIT
-#   persist:
-#     - data
-#     - config
+      - README.md
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
   algorithm: sha256
 
-# Snapshot configuration
 snapshot:
-  name_template: "{{ incpatch .Version }}-next-{{ .ShortCommit }}"
+  version_template: "{{ incpatch .Version }}-next"
 
-# Changelog configuration
 changelog:
   sort: asc
   use: github
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
-      - '^chore:'
-      - '^ci:'
-      - merge conflict
-      - Merge pull request
-      - Merge remote-tracking branch
-      - Merge branch
-  groups:
-    - title: '🚀 Features'
-      regexp: "^.*feat[(\\w)]*:+.*$"
-      order: 0
-    - title: '🐛 Bug fixes'
-      regexp: "^.*fix[(\\w)]*:+.*$"
-      order: 1
-    - title: '📝 Documentation'
-      regexp: "^.*docs[(\\w)]*:+.*$"
-      order: 2
-    - title: '🔧 Maintenance'
-      regexp: "^.*chore[(\\w)]*:+.*$"
-      order: 3
-    - title: '🔄 CI/CD'
-      regexp: "^.*ci[(\\w)]*:+.*$"
-      order: 4
-    - title: '🔧 Others'
-      order: 999
+      - "^docs:"
+      - "^chore:"
+      - "^test:"
+      - "Merge pull request"
+      - "Merge branch"
 
-# Release configuration
 release:
   github:
     owner: zy84338719
     name: upftp
   draft: false
   prerelease: auto
-  extra_files:
-    - glob: ./upftp.example.yaml
-  footer: |
-    ## Installation
-    
-    ### macOS (Homebrew)
+  name_template: "{{ .Tag }} · {{ .ProjectName }}"
+  header: |
+    ## upftp {{ .Tag }}
+    快速、即开即用的 FTP 文件分享工具。单二进制,跨平台。
+
+    ### 一行安装
+    **Linux / macOS:**
     ```bash
-    brew tap zy84338719/tap
-    brew install upftp
+    curl -fsSL https://github.com/zy84338719/upftp/raw/main/scripts/install.sh | bash
     ```
-    
-    ### Ubuntu/Debian
-    ```bash
-    # Download .deb from assets below
-    sudo dpkg -i upftp_*.deb
-    sudo systemctl enable upftp
-    sudo systemctl start upftp
-    ```
-    
-    ### CentOS/RHEL/Fedora
-    ```bash
-    # Download .rpm from assets below
-    sudo rpm -i upftp-*.rpm
-    sudo systemctl enable upftp
-    sudo systemctl start upftp
-    ```
-    
-    ### Windows (Scoop)
+    **Windows(PowerShell):**
     ```powershell
-    scoop bucket add zy84338719 https://github.com/zy84338719/scoop-bucket
-    scoop install upftp
+    irm https://github.com/zy84338719/upftp/raw/main/scripts/install.ps1 | iex
     ```
-    
-    ### Manual
-    Download the binary for your platform from the assets below.
 
-    Full documentation: https://github.com/zy84338719/upftp#readme
-
-# Before hooks
-before:
-  hooks:
-    - go mod tidy
-    - go mod download
-
+    ### 手动下载
+    下方选择对应平台的归档,解压后将 `upftp`(Windows 为 `upftp.exe`)放入 PATH。
