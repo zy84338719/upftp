@@ -81,7 +81,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	auth := &core.Auth{Anonymous: cfg.Anonymous, User: cfg.User, Pass: cfg.Pass}
+	auth := &core.Auth{Anonymous: !cfg.AuthEnabled(), User: cfg.User, Pass: cfg.Pass}
 	mgr := core.NewSessionManager(host, logger)
 	files := &core.Files{Root: cfg.Dir, ReadOnly: cfg.ReadOnly}
 
@@ -89,7 +89,7 @@ func main() {
 	defaultSess, err := mgr.Create(ctx, core.SessionSpec{
 		Dir:       cfg.Dir,
 		Port:      cfg.FTPPort,
-		Anonymous: cfg.Anonymous,
+		Anonymous: !cfg.AuthEnabled(),
 		User:      cfg.User,
 		Pass:      cfg.Pass,
 		ReadOnly:  cfg.ReadOnly,
