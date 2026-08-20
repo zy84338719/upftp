@@ -6,6 +6,7 @@
 package ftp
 
 import (
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -39,7 +40,7 @@ func resolveRel(cwd, arg string) string {
 	} else {
 		joined = cwd + "/" + arg
 	}
-	return cleanSlash(filepath.Clean(joined))
+	return cleanSlash(path.Clean(joined))
 }
 
 // SecureJoin 将 FTP 虚拟路径安全映射到宿主机文件系统路径,确保结果不逃逸出 root。
